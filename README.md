@@ -26,7 +26,7 @@ The notebook [im3_power_plants_to_tethys.ipynb](./im3_power_plants_to_tethys.ipy
 
 | scenario      | global plants | CONUS plants | Output |
 |:-------------:|:-------------:|:------------:|:------:|
-| historical    | [GPPD v1.3](https://datasets.wri.org/dataset/globalpowerplantdatabase) | IM3 initial powerplants (rcfs/projects/im3/exp_b/exp_b_multi_model_coupling_west/models/cerf/data/power_plant_data/power_plant_locations_csv/power_plant_locations.csv) | ./data/historical_gppd_im3_tethys_plants.nc |
+| historical    | [GPPD v1.3](https://datasets.wri.org/dataset/globalpowerplantdatabase) | IM3 initial powerplants (/rcfs/projects/im3/exp_b/exp_b_multi_model_coupling_west/models/cerf/data/power_plant_data/power_plant_locations_csv/power_plant_locations.csv) | ./data/powerplants/historical_gppd_im3_tethys_plants.nc |
 
 #### Other Inputs?
 
