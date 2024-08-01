@@ -5,6 +5,7 @@ Meta-repository for data and code associated with all Tethys integration compone
 
  - [ ] Issue with regridding in Tethys https://github.com/JGCRI/tethys/issues/71. Assignee: Travis
  - [ ] Decide how to disaggregate renewable vs fossil water, see below. Assignee: Hassan and all.
+ - [ ] Pilot disaggregation code within Tethys. Assignee: Hassan.
  - [ ] Consider if there is a data driven strategy for renewable/fossil disaggregation. Assignee Cameron.
  - [ ] Decide which LULC data to use for the historical scenario and figure out what that means for Tethys. Assignee: all.
  - [ ] Check with Kanishka about the historical LULC data layer. Assignee: Travis.
