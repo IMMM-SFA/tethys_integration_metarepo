@@ -3,9 +3,11 @@ Meta-repository for data and code associated with all Tethys integration compone
 
 ## Tasks
 
- - [ ] Issue with regridding in Tethys https://github.com/JGCRI/tethys/issues/71
+ - [ ] Issue with regridding in Tethys https://github.com/JGCRI/tethys/issues/71. Assignee: Travis
  - [ ] Decide how to disaggregate renewable vs fossil water, see below. Assignee: Hassan and all.
+ - [ ] Consider if there is a data driven strategy for renewable/fossil disaggregation. Assignee Cameron.
  - [ ] Decide which LULC data to use for the historical scenario and figure out what that means for Tethys. Assignee: all.
+ - [ ] Check with Kanishka about the historical LULC data layer. Assignee: Travis.
  - [ ] Run Tethys for the historical period, recognizing we may change things later. Assignee: Travis.
  - [ ] Investigate the latest USGS water usage data and compare with historical Tethys output. Assignee: Cameron.
  - [ ] Provide updated population data. What about historical population? Assignee: Chris.
