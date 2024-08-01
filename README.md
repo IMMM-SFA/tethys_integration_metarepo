@@ -12,6 +12,7 @@ Meta-repository for data and code associated with all Tethys integration compone
  - [ ] Run Tethys for the historical period, recognizing we may change things later. Assignee: Travis.
  - [ ] Investigate the latest USGS water usage data and compare with historical Tethys output. Assignee: Cameron.
  - [ ] Provide updated population data. What about historical population? Assignee: Chris.
+ - [ ] Decide how to temporally disaggregate power plant temporal water usage. Assignee: TBD.
  - [ ] Read the Isaac paper draft and decide how to move it forward. Assignee: Cameron.
  - [ ] Update Tethys in support of these decisions. Assignee: Hassan, Travis.
 
