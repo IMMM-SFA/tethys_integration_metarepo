@@ -3,18 +3,20 @@ Meta-repository for data and code associated with all Tethys integration compone
 
 ## Tasks
 
- - [ ] Issue with regridding in Tethys https://github.com/JGCRI/tethys/issues/71. Assignee: Travis
+ - [ ] Issue with regridding in Tethys https://github.com/JGCRI/tethys/issues/71. Assignee: Chris
+ - [ ] Get Hassan running on Tethy (importlib issue). Assignee: Travis, Hassan
  - [ ] Decide how to disaggregate renewable vs fossil water, see below. Assignee: Hassan and all.
  - [ ] Pilot disaggregation code within Tethys. Assignee: Hassan.
- - [ ] Consider if there is a data driven strategy for renewable/fossil disaggregation. Assignee Cameron.
- - [ ] Decide which LULC data to use for the historical scenario and figure out what that means for Tethys. Assignee: all.
+ - [ ] Consider if there is a data driven strategy for renewable/fossil disaggregation. Low priority, but keep an eye out for data. Assignee Cameron.
  - [ ] Check with Kanishka about the historical LULC data layer. Assignee: Travis.
- - [ ] Run Tethys for the historical period, recognizing we may change things later. Assignee: Travis.
+ - [ ] Run Tethys for the historical period with current tethys but updated GCAM. Assignee: Travis and Hassan.
  - [ ] Investigate the latest USGS water usage data and compare with historical Tethys output. Assignee: Cameron.
  - [ ] Provide updated population data. What about historical population? Assignee: Chris.
- - [ ] Decide how to temporally disaggregate power plant temporal water usage. Assignee: TBD.
+ - [ ] Implement GO-CERF-GO temporal electricity sector downscaling. Assignee: Hassan.
  - [ ] Read the Isaac paper draft and decide how to move it forward. Assignee: Cameron.
  - [ ] Update Tethys in support of these decisions. Assignee: Hassan, Travis.
+ - [ ] Connect with the USGS to see if there are other datasets we could leverage (within the IHTM network for instance). TBD once we are farther along.
+ - [ ] ADD ALL CODE AND WORKFLOW TO THIS METAREPO. Assignee: all.
 
 ## Discussion Topics
 
