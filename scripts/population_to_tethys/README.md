@@ -21,7 +21,7 @@ Requirements:
 ```bash
 python population_to_tethys.py \
      --global_dir <original Tethys population data directory> \
-     --local_dir <root directory holding the gridded population data> \
+     --local_dir <root directory holding the US state level gridded population data> \
      --mosaic_dir <directory to save mosaic outputs to> \
      --output_dir <directory to write the modified new outputs to> \
      --percent_area_file percent_grid.zip \
