@@ -11,7 +11,7 @@ Meta-repository for data and code associated with all Tethys integration compone
  - [ ] Check with Kanishka about the historical LULC data layer. Assignee: Travis.
  - [ ] Run Tethys for the historical period with current tethys but updated GCAM. Assignee: Travis and Hassan.
  - [ ] Investigate the latest USGS water usage data and compare with historical Tethys output. Assignee: Cameron.
- - [ ] Provide updated population data. What about historical population? Assignee: Chris.
+ - [x] Provide updated population data. What about historical population? Assignee: Chris. [PR #1](https://github.com/IMMM-SFA/tethys_integration_metarepo/pull/1)
  - [ ] Implement GO-CERF-GO temporal electricity sector downscaling. Assignee: Hassan.
  - [ ] Read the Isaac paper draft and decide how to move it forward. Assignee: Cameron.
  - [ ] Update Tethys in support of these decisions. Assignee: Hassan, Travis.
