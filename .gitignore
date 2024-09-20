@@ -1,3 +1,9 @@
+# system files
+.DS_Store
+
+# pyenv
+.python-version
+
 # data
 data/
 
