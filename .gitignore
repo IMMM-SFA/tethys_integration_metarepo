@@ -7,6 +7,11 @@
 # data
 data/
 
+# outputs
+output/*
+output_test/*
+*slurm*.out
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

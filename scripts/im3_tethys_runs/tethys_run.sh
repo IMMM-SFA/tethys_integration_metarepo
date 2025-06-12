@@ -43,10 +43,10 @@ echo ""
 echo "==================================================="
 # Check if a scenario name is provided as an argument
 if [ -n "$SCENARIO" ]; then
-    echo "Running script: $SCRIPT_NAME with scenario: $SCENARIO"
+    echo -e "Running script: $SCRIPT_NAME with scenario: $SCENARIO \n"
     python $SCRIPT_NAME $SCENARIO
 else
-    echo "Running script: $SCRIPT_NAME with all scenarios"
+    echo -e "Running script: $SCRIPT_NAME with all scenarios \n"
     python $SCRIPT_NAME
 fi
 echo "==================================================="
@@ -74,11 +74,8 @@ else
     echo "Error: ${error_messages[$err]} (Exit Status: $err)"
 fi
 
-echo "==================================================="
 end=`date +%s.$N`
 runtime=$( echo "($end - $start) / 60" | bc -l )
-echo "==================================================="
-
 echo -e "\n Run completed in $runtime minutes \n"
 
 # deactivate the environment
