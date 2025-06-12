@@ -153,6 +153,10 @@ def run_scenario(scenario):
         model = tethys.Tethys(config_file=f'{scenario_path}/config_{demand_type}.yaml')
         model.run_model()
 
+    print('')
+    print(f"Output is saved in: {scenario_path}")
+    print('')
+
 
 if __name__ == "__main__":
 
