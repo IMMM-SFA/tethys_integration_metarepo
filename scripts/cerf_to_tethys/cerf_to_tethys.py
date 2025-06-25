@@ -146,24 +146,24 @@ def cerf_to_tethys():
 
         # if historic scenario
         # create geodataframe from GPPD data
-        if scenarios[i] == 'historical':
-            gppd_geo = gppd_plants[['country', 'capacity_mw', 'latitude', 'longitude', 'primary_fuel']]
-            gppd_geo = gpd.GeoDataFrame(
-                gppd_geo,
-                geometry=gpd.points_from_xy(gppd_geo.longitude, gppd_geo.latitude), crs="EPSG:4326"
-            )
-            # exclude the CONUS plants (keeping Alaska and Hawaii)
-            min_lat = im3_plants.lat.min()
-            max_lat = im3_plants.lat.max()
-            min_lon = im3_plants.lon.min()
-            max_lon = im3_plants.lon.max()
-            gppd_geo = gppd_geo[
-                (gppd_geo.country != 'USA') |
-                (((gppd_geo.latitude <= min_lat) |
-                (gppd_geo.latitude >= max_lat)) |
-                ((gppd_geo.longitude <= min_lon) |
-                (gppd_geo.longitude >= max_lon)))
-            ]
+        # if scenarios[i] == 'historical':
+        #     gppd_geo = gppd_plants[['country', 'capacity_mw', 'latitude', 'longitude', 'primary_fuel']]
+        #     gppd_geo = gpd.GeoDataFrame(
+        #         gppd_geo,
+        #         geometry=gpd.points_from_xy(gppd_geo.longitude, gppd_geo.latitude), crs="EPSG:4326"
+        #     )
+        #     # exclude the CONUS plants (keeping Alaska and Hawaii)
+        #     min_lat = im3_plants.lat.min()
+        #     max_lat = im3_plants.lat.max()
+        #     min_lon = im3_plants.lon.min()
+        #     max_lon = im3_plants.lon.max()
+        #     gppd_geo = gppd_geo[
+        #         (gppd_geo.country != 'USA') |
+        #         (((gppd_geo.latitude <= min_lat) |
+        #         (gppd_geo.latitude >= max_lat)) |
+        #         ((gppd_geo.longitude <= min_lon) |
+        #         (gppd_geo.longitude >= max_lon)))
+        #     ]
 
         # confirm all techs have been mapped
         if len(im3_geo[im3_geo.tech_name.isna()]) > 0:
@@ -220,11 +220,25 @@ def cerf_to_tethys():
                 ).pivot(index=['lat', 'lon'], columns='tech_name', values='unit_size_mw').drop(columns=[np.nan])
             ).rio.set_crs(to_crs).expand_dims(year=[year])
 
+            for v in list(set(tech_mapping.values())):
+                if not v in aggregated_plants:
+                    aggregated_plants[v] = xr.zeros_like(aggregated_plants[list(aggregated_plants.data_vars)[0]])
+
             for v in list(aggregated_plants.data_vars):
                 aggregated_plants[v].attrs['units'] = 'aggregated MW capacity'
 
+            # create a "fallback" type that has the normalized aggregate MW distribution
+            # this can be used in Tethys as an additional proxy to catch unallocated withdrawal
+            aggregated_plants['NormalizedAggregate'] = aggregated_plants.to_array('type').sum(dim='type')
+            aggregated_plants['NormalizedAggregate'] = aggregated_plants['NormalizedAggregate'] / aggregated_plants['NormalizedAggregate'].sum()
+
             # write to file
-            aggregated_plants.to_netcdf(f'../../data/powerplants/{scenarios[i]}_{year}_gppd_im3_tethys_plants.nc')
+            comp = dict(zlib=True, complevel=5)
+            encoding = {var: comp for var in aggregated_plants.data_vars}
+            aggregated_plants.fillna(0).to_netcdf(
+                f'../../data/powerplants/{scenarios[i]}_{year}_gppd_im3_tethys_plants.nc',
+                encoding=encoding,
+            )
 
 if __name__ == "__main__":
     cerf_to_tethys()
