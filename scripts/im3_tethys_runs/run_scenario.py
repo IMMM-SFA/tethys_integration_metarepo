@@ -13,8 +13,8 @@ scenarios = [
 
 def run_scenario(scenario):
 
-    five_yearly = np.arange(2020, 2105, 5).tolist()
-    ten_yearly  = np.arange(2020, 2110, 10).tolist()
+    five_yearly = np.arange(2020, 2060, 5).tolist()
+    ten_yearly  = np.arange(2020, 2070, 10).tolist()
     
 
     scenario_path = f'../../output/{scenario}'
@@ -45,10 +45,10 @@ def run_scenario(scenario):
                     'variables': [
                         'c3_crop_irr', 'Corn_irr', 'Wheat_irr', 'Wheat_winter_irr', 'Soy_irr', 'Barley_irr',
                         'Barley_winter_irr', 'Rye_irr', 'Rye_winter_irr', 'Cassava_irr', 'Citrus_irr',
-                        'Cocoa_irr', 'Coffee_irr', 'Cotton_irr', 'DatePalm_irr', 'FodderGrass_irr',
+                        'Cocoa_irr', 'Coffee_irr', 'Cotton_irr', 'DatePalm_irr',
                         'Grapes_irr', 'GroundNuts_irr', 'Millet_irr', 'OilPalm_irr', 'Potatoes_irr',
                         'Pulses_irr', 'RapeSeed_irr', 'Rice_irr', 'Sorghum_irr', 'Sugarbeet_irr',
-                        'Sugarcane_irr', 'sunflower_irr', 'miscanthus_irr', 'switchgrass_irr', 'sunflower_irr',
+                        'Sugarcane_irr', 'sunflower_irr', 'miscanthus_irr', 'switchgrass_irr',
                         'CornTropical_irr', 'SoyTropical_irr',
                     ],
                     'years': five_yearly,
@@ -68,8 +68,8 @@ def run_scenario(scenario):
                 },
                 f'../../data/powerplants/{scenario}_{{year}}_gppd_im3_tethys_plants.nc': {
                     'variables': [
-                        'Biomass', 'Coal', 'Cogeneration', 'Gas', 'Geothermal', 'Hydro', 'Nuclear',
-                        'Oil', 'Other', 'Petcoke', 'Solar', 'Storage', 'Waste', 'Wave and Tidal', 'Wind',
+                        'Biomass', 'Coal', 'Gas', 'Geothermal', 'Nuclear',
+                        'Oil', 'Solar', 'NormalizedAggregate',
                     ],
                     'years': five_yearly,
                 },
@@ -77,14 +77,13 @@ def run_scenario(scenario):
             'downscaling_rules': {
                 'Domestic':        'Population',
                 'Electricity': {
-                    # some states currently have no biomass plants, so use location of existing coal (like a retrofit)
-                    'electricity/biomass':        ['Biomass', 'Coal'],
-                    'electricity/coal':            'Coal',
-                    'electricity/gas':             'Gas',
-                    'electricity/geothermal':      'Geothermal',
-                    'electricity/nuclear':         'Nuclear',
-                    'electricity/refined liquids': 'Oil',
-                    'electricity/solar':           'Solar',
+                    'electricity/biomass':         ['Biomass', 'NormalizedAggregate'],
+                    'electricity/coal':            ['Coal', 'NormalizedAggregate'],
+                    'electricity/gas':             ['Gas', 'NormalizedAggregate'],
+                    'electricity/geothermal':      ['Geothermal', 'NormalizedAggregate'],
+                    'electricity/nuclear':         ['Nuclear', 'NormalizedAggregate'],
+                    'electricity/refined liquids': ['Oil', 'NormalizedAggregate'],
+                    'electricity/solar':           ['Solar', 'NormalizedAggregate'],
                     # excluding electrcity/hydro, which is not cooling water
                 },
                 'Irrigation': {
@@ -96,7 +95,6 @@ def run_scenario(scenario):
                     'SugarCrop':   ['Sugarbeet_irr', 'Sugarcane_irr'],
                     'OtherGrain':  ['Barley_irr', 'Barley_winter_irr', 'Rye_irr', 'Rye_winter_irr', 'Millet_irr', 'Sorghum_irr'],
                     'FiberCrop':    'Cotton_irr',
-                    'FodderGrass': ['FodderGrass_irr'],
                     'FodderHerb':   'c3_crop_irr',
                     'biomass':     ['miscanthus_irr', 'switchgrass_irr'],
                     'MiscCrop':    ['Citrus_irr', 'Cocoa_irr', 'Coffee_irr', 'DatePalm_irr', 'Grapes_irr', 'Pulses_irr'],
@@ -112,8 +110,8 @@ def run_scenario(scenario):
                 'Manufacturing':  'Population',
                 'Mining':         'Population',
             },
-            # affects irrigation and livestock sectors, more iterations means state-level totals (e.g., sum all crops within state) will better match with GCAM
-            'supersector_iterations': 0,  # turning off because state totals do not match USA total value
+            'supersector_iterations': 0,
+            'irrigation_conveyance_efficiency': 0.829937, # factor between GCAM USA level and state level irrigation withdrawal due to conveyance losses
             'temporal_config': {
                 'Domestic': {
                     'method': 'domestic',
