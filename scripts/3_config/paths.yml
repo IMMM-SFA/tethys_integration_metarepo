@@ -1,0 +1,77 @@
+# Environment-keyed base paths used across the metarepo.
+#
+# Intended as the single source of truth for where inputs and outputs
+# live on each supported environment. Legacy scripts still hard-code
+# paths; those are documented below and should be migrated as they're
+# touched.
+#
+# To use from Python:
+#   import yaml, os
+#   with open('scripts/3_config/paths.yml') as f:
+#       paths = yaml.safe_load(f)
+#   env = os.environ.get('TETHYS_ENV', 'local')
+#   tethys_output = paths['environments'][env]['tethys_output']
+
+environments:
+
+  local:
+    # macOS laptop with external data volume
+    data_root: /Volumes/data
+    tethys_output: /Volumes/data/tethys
+    tethys_canonical_output: /Volumes/data/tethys/output_adjusted_usgs_method2
+    shapefiles: /Volumes/data/shapefiles
+    tgw_hydro: /Volumes/data/tgw-hydro
+    mosartwmpy_output: /Volumes/data/mosartwmpy
+
+  pnl_pic:
+    # Legacy PNNL PIC cluster; many .py / .sh wrappers still point here
+    tethys_base: /pic/projects/im3/tethys/tethys-im3-scenarios
+    tethys_data: /pic/projects/im3/tethys/tethys-im3-scenarios/data
+    gcam_scenarios: /pic/projects/im3/tethys/tethys-im3-scenarios/data/gcam
+    monthly_deficit: /pic/projects/im3/tethys/tethys-im3-scenarios/data/monthly/deficit
+    venv: /pic/projects/im3/tethys/tethys-im3-scenarios/venv
+
+  pnl_rcfs:
+    # Current PNNL HPC target (deception)
+    project_root: /rcfs/projects/im3
+    tethys_base: /rcfs/projects/im3/tethys
+    mosartwmpy_base: /rcfs/projects/im3/mosartwmpy
+    venv_default: /rcfs/projects/im3/tethys/venv
+    venv_rocky: /rcfs/projects/im3/tethys/venv_rocky
+
+  nersc:
+    # Used only by scripts/0_preprocessing/gsi_nersc/*
+    project_root: /global/cfs/projectdirs/m2702
+    tgw_forcing: /global/cfs/projectdirs/m2702/gsharing/tgw-wrf-conus
+    tethys_demand: /global/cfs/projectdirs/m2702/dardiry/Tethys_Demand
+
+# Legacy hard-coded paths currently baked into scripts.
+# Migration target: replace each with a lookup against environments above.
+# (Listed here so future refactors know what to touch.)
+legacy_hardcodes:
+
+  scripts/0_preprocessing/compute_gsi.py:
+    input_file: /pic/projects/im3/dardiry/Tethys_Demand/Outputs/TGW/{folder}/daily/met_variables/wrf_variables_tethys_demand_*.nc
+    output_file: /pic/projects/im3/tethys/tethys-im3-scenarios/data/monthly/deficit/gsi_{scenario}.nc
+
+  scripts/0_preprocessing/compute_deficit.py:
+    input_file: /pic/projects/im3/dardiry/Tethys_Demand/Outputs/TGW/{folder}/daily/GSI/TGW_PRECIP_ET0_GSI_*.nc
+    output_file: /pic/projects/im3/tethys/tethys-im3-scenarios/data/monthly/deficit/deficit_{scenario}.nc
+
+  scripts/0_preprocessing/compute_monthly_weights.py:
+    deficit_file: /pic/projects/im3/tethys/tethys-im3-scenarios/data/monthly/deficit/deficit_{scenario}.nc
+    gsi_file: /pic/projects/im3/tethys/tethys-im3-scenarios/data/monthly/deficit/gsi_{scenario}.nc
+    output_file: /pic/projects/im3/tethys/tethys-im3-scenarios/data/monthly/deficit/irrigation_weight_{scenario}.nc
+
+  scripts/0_preprocessing/compute_gsi.sh:
+    invokes: /pic/projects/im3/tethys/tethys-im3-scenarios/data/monthly/deficit/compute_gsi.py
+    note: invokes a PIC-resident copy of compute_gsi.py, not the repo's copy.
+
+  scripts/0_preprocessing/compute_deficit.sh:
+    invokes: /pic/projects/im3/tethys/tethys-im3-scenarios/data/monthly/deficit/compute_deficit.py
+    note: same PIC-resident pattern.
+
+  scripts/0_preprocessing/gsi_nersc/TGW_PET_GSI_NERSC.py:
+    cwd: /global/cfs/projectdirs/m2702/dardiry/Tethys_Demand/
+    wrf_input: /global/cfs/projectdirs/m2702/gsharing/tgw-wrf-conus/{scenario}/hourly/...
+    output: /global/cfs/projectdirs/m2702/dardiry/Tethys_Demand/Outputs/TGW/{...}
