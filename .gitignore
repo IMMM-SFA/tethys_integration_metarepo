@@ -12,6 +12,18 @@ output/*
 output_test/*
 *slurm*.out
 
+# large archives (belong on /Volumes or /rcfs, not in git)
+*.zip
+
+# rendered previews of docs/ markdown
+docs/*.html
+
+# large reference PDFs regenerable from scripts
+validation/tethys-prev-version-compare.pdf
+
+# figures/ dir at repo root is a scratch output area
+figures/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
