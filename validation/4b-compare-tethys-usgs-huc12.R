@@ -1,3 +1,8 @@
+# Compare Tethys vs USGS water-use estimates at the HUC12 scale. USGS
+# public-supply and irrigation data are reported at HUC12 (thermoelectric
+# is per-plant and aggregated up); this script produces fine-scale
+# agreement plots and distribution diagnostics complementary to 4a.
+
 library(tidyverse)
 library(sf)
 library(ncdf4)

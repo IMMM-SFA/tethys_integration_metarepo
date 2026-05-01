@@ -1,3 +1,10 @@
+# Spatially weight the Tethys 1/8-degree grid to HUC polygons while
+# preserving the groundwater-vs-surface-water fraction from
+# gridded_runoff_shares.nc. Sibling to 1-postprocess-tethys.py, but
+# computes HUC-level GW/SW splits instead of total demand.
+# (Formerly 1b-spatial-weight-huc-tethys-grid-gwfrac.py; renamed to 1c
+#  so 1b unambiguously refers to the prior-version comparison.)
+
 import xarray as xr
 import xagg as xa
 import geopandas as gpd

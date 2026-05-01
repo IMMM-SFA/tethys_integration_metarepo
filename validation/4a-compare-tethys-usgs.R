@@ -1,3 +1,7 @@
+# Compare Tethys vs USGS water-use estimates at the HUC6 scale: annual
+# totals, monthly cycles, sectoral splits, and percent differences.
+# HUC12 comparisons are in the sibling script 4b.
+
 library(tidyverse)
 library(sf)
 library(ncdf4)

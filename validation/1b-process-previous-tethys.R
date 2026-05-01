@@ -1,3 +1,7 @@
+# Reprocess the PREVIOUS version of Tethys (Khan et al. 2023) HUC aggregates,
+# producing HUC6 summaries that step 4a uses to show v2 vs v1 deltas.
+# Pairs with 1-postprocess-tethys.py (which does the same for the v2 output).
+
 library(tidyverse)
 library(sf)
 library(scico)
