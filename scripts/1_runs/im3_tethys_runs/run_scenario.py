@@ -17,7 +17,7 @@ def run_scenario(scenario):
     ten_yearly  = np.arange(2020, 2070, 10).tolist()
     
 
-    scenario_path = f'../../output/{scenario}'
+    scenario_path = f'../../../output/{scenario}'
     Path(scenario_path).mkdir(parents=True, exist_ok=True)
 
     for demand_type in ['withdrawals', 'consumption']:
@@ -28,20 +28,20 @@ def run_scenario(scenario):
             'bounds': [25.0625, 52.9375, -124.9375, -67.0625],  # [lat_min, lat_max, lon_min, lon_max] # CONUS
             'demand_type': demand_type,
             'output_dir': f'{scenario_path}/',
-            'gcam_db':  f'../../data/gcam/database_{scenario}',
+            'gcam_db':  f'../../../data/gcam/database_{scenario}',
             'source_disaggregation': demand_type=='withdrawals',
             'map_files': [
-                '../../data/maps/states.tif',
-                '../../data/maps/statebasins.tif',
-                '../../data/maps/USA.tif',
-                '../../data/maps/USAbasins.tif',
+                '../../../data/maps/states.tif',
+                '../../../data/maps/statebasins.tif',
+                '../../../data/maps/USA.tif',
+                '../../../data/maps/USAbasins.tif',
             ],
             'proxy_files': {
-                f'../../scripts/population_to_tethys/{scenario[-4:]}_{{year}}.tif': {
+                f'../../0_preprocessing/population_to_tethys/{scenario[-4:]}_{{year}}.tif': {
                     'variables': 'Population',
                     'years': ten_yearly,
                 },
-                f'../../data/demeter/demeter_78_PFT_output/output_wo_harvforest_demeter_CONUS_harmonized_im3_demeter_{scenario}_{{year}}.nc': {
+                f'../../../data/demeter/demeter_78_PFT_output/output_wo_harvforest_demeter_CONUS_harmonized_im3_demeter_{scenario}_{{year}}.nc': {
                     'variables': [
                         'c3_crop_irr', 'Corn_irr', 'Wheat_irr', 'Wheat_winter_irr', 'Soy_irr', 'Barley_irr',
                         'Barley_winter_irr', 'Rye_irr', 'Rye_winter_irr', 'Cassava_irr', 'Citrus_irr',
@@ -54,7 +54,7 @@ def run_scenario(scenario):
                     'years': five_yearly,
                     'flags': ['cell_area_share', 'long_name_as_name'],
                 },
-                '../../data/livestock/5_{variable}_{year}_Da.tif': {
+                '../../../data/livestock/5_{variable}_{year}_Da.tif': {
                     'variables': {
                         'Buffalo': 'Bf',
                         'Cattle': 'Ct',
@@ -66,7 +66,7 @@ def run_scenario(scenario):
                     },
                     'years': 2010,
                 },
-                f'../../data/powerplants/{scenario}_{{year}}_gppd_im3_tethys_plants.nc': {
+                f'../../../data/powerplants/{scenario}_{{year}}_gppd_im3_tethys_plants.nc': {
                     'variables': [
                         'Biomass', 'Coal', 'Gas', 'Geothermal', 'Nuclear',
                         'Oil', 'Solar', 'NormalizedAggregate',
@@ -116,26 +116,26 @@ def run_scenario(scenario):
                 'Domestic': {
                     'method': 'domestic',
                     'kwargs': {
-                        'tasfile': f'../../data/monthly/Tavg_HDD_CDD/Tavg_HDD_CDD_{scenario[:-5]}_*.nc',
+                        'tasfile': f'../../../data/monthly/Tavg_HDD_CDD/Tavg_HDD_CDD_{scenario[:-5]}_*.nc',
                         'tasvar': 'Tavg',
-                        'rfile': '../../data/monthly/DomesticR.nc',
+                        'rfile': '../../../data/monthly/DomesticR.nc',
                     },
                 },
                 'Electricity': {
                     'method': 'electricity',
                     'kwargs': {
-                        'hddfile': f'../../data/monthly/Tavg_HDD_CDD/Tavg_HDD_CDD_{scenario[:-5]}_*.nc',
-                        'cddfile': f'../../data/monthly/Tavg_HDD_CDD/Tavg_HDD_CDD_{scenario[:-5]}_*.nc',
+                        'hddfile': f'../../../data/monthly/Tavg_HDD_CDD/Tavg_HDD_CDD_{scenario[:-5]}_*.nc',
+                        'cddfile': f'../../../data/monthly/Tavg_HDD_CDD/Tavg_HDD_CDD_{scenario[:-5]}_*.nc',
                         'hddvar': 'HDD',
                         'cddvar': 'CDD',
-                        'gcam_db': f'../../data/gcam/database_{scenario}',
-                        'regionfile': '../../data/maps/states.tif',
+                        'gcam_db': f'../../../data/gcam/database_{scenario}',
+                        'regionfile': '../../../data/maps/states.tif',
                     },
                 },
                 'Irrigation': {
                     'method': 'weights',
                     'kwargs': {
-                        'weightfile': f'../../data/monthly/deficit/updated_irrigation_weight_{scenario[:-5]}.nc',
+                        'weightfile': f'../../../data/monthly/deficit/updated_irrigation_weight_{scenario[:-5]}.nc',
                         'prenormalized': True,
                     },
                 },

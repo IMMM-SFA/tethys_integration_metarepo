@@ -6,8 +6,8 @@ from pathlib import Path
 
 # example usage: python run_scenario_decep.py rcp45cooler_ssp3
 
-inputs_dir = '../../../input'
-outputs_dir = '../../output_test'
+inputs_dir = '../../../../input'
+outputs_dir = '../../../output_test'
 
 scenarios = [
     'rcp45cooler_ssp3', 'rcp45cooler_ssp5',
