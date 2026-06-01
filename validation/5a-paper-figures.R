@@ -272,7 +272,7 @@ p_monthly_total = demand_monthly |>
   ggplot() +
   geom_boxplot(aes(factor(month(datetime)), value, fill = name)) +
   facet_wrap(
-    vars(demand_sector, water_use_type),
+    vars(water_use_type, demand_sector),
     labeller = label_wrap_gen(multi_line = FALSE),
     scales = "free_y"
   ) +
