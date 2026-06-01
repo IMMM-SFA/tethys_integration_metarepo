@@ -1,3 +1,15 @@
+# Generates publication figures for the Tethys data paper.
+#
+# Inputs:  ./data/huc{02,04,06,08}-{Sector}-{withdrawals,consumption}-usgs-tethys.csv
+#          ./data/tethys_dominant_sector_by_grid_cell.csv
+#          /Volumes/data/shapefiles/HUC{2,4,6,8}/HUC{2,4,6,8}.shp
+#
+# Output dirs (writes to all enabled dirs):
+#   - Local: ./figures/  (always on)
+#   - Paper: $HOME/Dropbox/Apps/Overleaf/TETHYS data paper/
+#       Toggle with --paper / --no-paper, or env var WRITE_PAPER=true|false.
+#       Default: off.
+
 library(tidyverse)
 library(sf)
 library(ncdf4)
@@ -11,41 +23,84 @@ options(
   dplyr.summarise.inform = FALSE
 )
 
-input_data_dir = 'data'
-plot_dir = '~/Dropbox/Apps/Overleaf/TETHYS data paper/'
+# Settings ---------------------------------------------------------------
+# %%
+input_data_dir = "data"
+local_plot_dir = "figures"
+paper_plot_dir = "../paper/figures"
+shapefile_path = "/Volumes/data/shapefiles"
 
-# huc scale to use
+# Decide whether to also write to the paper directory. CLI flag overrides
+# env var; env var overrides default (FALSE).
+parse_paper_flag = function() {
+  args = commandArgs(trailingOnly = TRUE)
+  if ("--paper" %in% args) {
+    return(TRUE)
+  }
+  if ("--no-paper" %in% args) {
+    return(FALSE)
+  }
+  v = Sys.getenv("WRITE_PAPER", unset = "")
+  if (tolower(v) %in% c("1", "true", "yes")) {
+    return(TRUE)
+  }
+  if (tolower(v) %in% c("0", "false", "no")) {
+    return(FALSE)
+  }
+  FALSE
+}
+
+write_to_paper = parse_paper_flag()
+
+dir.create(local_plot_dir, showWarnings = FALSE, recursive = TRUE)
+if (write_to_paper) {
+  dir.create(
+    path.expand(paper_plot_dir),
+    showWarnings = FALSE,
+    recursive = TRUE
+  )
+}
+
+# Save a plot to every enabled output directory. Keeps the per-figure code
+# free of paper/local branching.
+save_plot = function(filename, plot, ...) {
+  out_paths = file.path(local_plot_dir, filename)
+  if (write_to_paper) {
+    out_paths = c(out_paths, file.path(path.expand(paper_plot_dir), filename))
+  }
+  for (p in out_paths) {
+    ggsave(p, plot = plot, ...)
+    message("Wrote ", p)
+  }
+}
+
+# huc scale to use for the validation comparison panels
 h = 6
 
 read_demand_file = function(fn) {
-  fn_split = str_split(fn, '-')
+  fn_split = str_split(fn, "-")
   demand_category = fn_split[[1]][2]
   demand_type = fn_split[[1]][3]
-  # TODO could add error checking here
   read_csv(fn) |>
     mutate(demand_sector = demand_category, water_use_type = demand_type)
 }
 
-# read usgs-tethys demand data
+# Read USGS-Tethys demand at the chosen HUC scale --------------------------
+# %%
 demand_huc_all_list = list()
-# huci = 0
-# for (h in c(2, 4, 6, 8)) {
-# huci = huci + 1
-# combine demand category files
 huc_demand_files = list.files(
   input_data_dir,
-  paste0('huc', sprintf('%02d', h), '-*'),
-  full.names = T
+  paste0("huc", sprintf("%02d", h), "-*"),
+  full.names = TRUE
 )
 demand_huc_all_list[[1]] = huc_demand_files |>
   map(read_demand_file) |>
   bind_rows() |>
   mutate(huc_scale = h)
-# }
+
 demand_huc_all = bind_rows(demand_huc_all_list) |>
   mutate(water_use_type = str_to_title(water_use_type)) |>
   filter(huc_scale == h)
-
 
 huc_name = paste0("huc", h)
 
@@ -61,8 +116,8 @@ demand_annual = demand_huc_all |>
     pdiff = (usgs_km3 - tethys_km3) / ((usgs_km3 + tethys_km3) / 2)
   ) |>
   mutate(
-    usgs_km3 = ifelse(demand_sector == 'Domestic', usgs_km3 * 1.12, usgs_km3),
-    usgs_mgd = ifelse(demand_sector == 'Domestic', usgs_mgd * 1.12, usgs_mgd),
+    usgs_km3 = ifelse(demand_sector == "Domestic", usgs_km3 * 1.12, usgs_km3),
+    usgs_mgd = ifelse(demand_sector == "Domestic", usgs_mgd * 1.12, usgs_mgd),
   ) %>%
   bind_rows(
     . |>
@@ -72,7 +127,7 @@ demand_annual = demand_huc_all |>
         tethys_km3 = sum(tethys_km3),
         pdiff = (usgs_km3 - tethys_km3) / ((usgs_km3 + tethys_km3) / 2)
       ) |>
-      mutate(demand_sector = 'Total')
+      mutate(demand_sector = "Total")
   )
 
 demand_monthly = demand_huc_all |>
@@ -91,19 +146,12 @@ demand_monthly_sum = demand_monthly |>
   group_by(datetime, huc_scale, water_use_type) |>
   summarise(usgs_km3 = sum(usgs_km3), tethys_km3 = sum(tethys_km3))
 
-huc_shape = "/Volumes/data/shapefiles/HUC%s/HUC%s.shp" |>
-  sprintf(h, h) |>
+huc_shape = "%s/HUC%s/HUC%s.shp" |>
+  sprintf(shapefile_path, h, h) |>
   st_read(quiet = TRUE) |>
   rename(huc = as.name(!!huc_name)) |>
   mutate(huc2 = substr(huc, 1, 2)) |>
-  # only include conus huc 2's
-  filter(huc2 %in% sprintf("%02d", 1:18)) #|>
-# simplify the polygons for faster plotting
-# need to project before simplifying
-# st_transform(54032) |> # azimuthal equidistant
-# st_transform("ESRI:102003") |> # USA_Contiguous_Albers_Equal_Area_Conic
-# st_simplify(dTolerance = .005) |>
-# st_transform(4326) # back to lat/lon
+  filter(huc2 %in% sprintf("%02d", 1:18))
 
 ave_diff_huc = demand_huc_all |>
   filter(huc_scale == h) |>
@@ -138,136 +186,112 @@ ave_diff_monthly_huc = demand_huc_all |>
       100
   )
 
-# --------------------------------------------------
-# annual total timeseries
-# --------------------------------------------------
+# Annual total timeseries -------------------------------------------------
+# %%
 p_annual_total = demand_annual |>
   mutate(plot_date = ISOdate(year, 1, 1)) |>
   pivot_longer(c(usgs_km3, tethys_km3)) |>
   mutate(
     name = case_when(
-      name == 'tethys_km3' ~ 'Tethys [km^3]',
-      name == 'usgs_km3' ~ 'USGS [km^3]'
+      name == "tethys_km3" ~ "Tethys [km^3]",
+      name == "usgs_km3" ~ "USGS [km^3]"
     )
   ) |>
   filter(huc_scale == h) |>
   ggplot() +
   geom_line(aes(plot_date, value, color = name), linewidth = 1) +
-  # geom_bar(
-  #   aes(year, value, fill = name),
-  #   position = "dodge",
-  #   stat = "identity",
-  #   color = "black"
-  # ) +
-  # facet_wrap(water_use_type ~ demand_sector, scales = 'free', nrow = 2) +
-  facet_grid(water_use_type ~ demand_sector, scales = 'free') +
-  # scale_fill_viridis_d("Dataset", option = "G") +
-  scale_color_manual('Data Source', values = colorblind_pal()(8)[c(1, 2)]) +
+  facet_grid(water_use_type ~ demand_sector, scales = "free") +
+  scale_color_manual("Data Source", values = colorblind_pal()(8)[c(1, 2)]) +
   labs(
     x = "",
     y = "Water Demand [km^3/year]",
-    title = 'USGS/Tethys total annual water use'
+    title = "USGS/Tethys total annual water use"
   ) +
   theme_bw() +
-  theme(legend.position = 'bottom') +
-  scale_fill_discrete('')
-p_annual_total
+  theme(legend.position = "bottom") +
+  scale_fill_discrete("")
 
-"%s/val1-huc%02d-usgs-tethys-annual-total.png" |>
-  sprintf(plot_dir, h) |>
-  ggsave(p_annual_total, width = 10, height = 6)
+if (interactive()) {
+  print(p_annual_total)
+}
+save_plot(
+  sprintf("val1-huc%02d-usgs-tethys-annual-total.png", h),
+  p_annual_total,
+  width = 10,
+  height = 6
+)
 
-
-# --------------------------------------------------
-# annual total timeseries for IM3 update slides
-# --------------------------------------------------
-p_annual_total2 = demand_annual |>
-  filter(demand_sector != 'Total', water_use_type == 'Withdrawals') |>
-  mutate(plot_date = ISOdate(year, 1, 1)) |>
-  pivot_longer(c(usgs_km3, tethys_km3)) |>
-  mutate(
-    name = case_when(
-      name == 'tethys_km3' ~ 'Tethys [km^3]',
-      name == 'usgs_km3' ~ 'USGS [km^3]'
-    )
-  ) |>
-  filter(huc_scale == h) |>
+# %% Annual pdiff boxplot ----------------------------------------------------
+# %%
+p_annual_total_pdiff = demand_annual |>
+  mutate(water_use_type = str_sub(water_use_type, 1, 1)) |>
   ggplot() +
-  geom_line(aes(plot_date, value, color = name), linewidth = 1) +
-
-  # geom_bar(
-  #   aes(year, value, fill = name),
-  #   position = "dodge",
-  #   stat = "identity",
-  #   color = "black"
-  # ) +
-  # facet_wrap(water_use_type ~ demand_sector, scales = 'free', nrow = 2) +
-  facet_grid(water_use_type ~ demand_sector, scales = 'free') +
-  # scale_fill_viridis_d("Dataset", option = "G") +
-  scale_color_manual('Data Source', values = colorblind_pal()(8)[c(1, 2)]) +
-  labs(
-    x = "",
-    y = "Water Demand [km^3/year]",
-    title = 'USGS/Tethys total annual water use'
+  geom_boxplot(aes(
+    water_use_type,
+    pdiff * 100,
+    fill = factor(water_use_type)
+  )) +
+  facet_wrap(~demand_sector, nrow = 1) +
+  scale_fill_discrete(
+    "Water UseType",
+    labels = c("C = Consumption", "W = Withdrawals"),
+    expand = expansion(mult = c(0, 0))
   ) +
   theme_bw() +
   theme(
     legend.position = 'bottom',
-    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)
+    legend.margin = margin(t = -20, b = 0, r = 0, l = 0)
   ) +
-  scale_fill_discrete('')
-p_annual_total2
+  labs(
+    x = "", #"Water Use Type [C = Consuption, W = Withdrawals]",
+    y = "Percent difference (USGS-Tethys) [%]"
+  )
 
-# --------------------------------------------------
-# annual pdiff boxplot
-# --------------------------------------------------
-p_annual_total_pdiff = demand_annual |>
-  ggplot() +
-  geom_boxplot(aes(demand_sector, pdiff * 100)) +
-  facet_wrap(~water_use_type) +
-  theme_bw() +
-  labs(x = 'Demand Sector', y = 'Percent difference (USGS-Tethys) [%]')
-p_annual_total_pdiff
+if (interactive()) {
+  print(p_annual_total_pdiff)
+}
+save_plot(
+  sprintf("val2-huc%02d-usgs-tethys-annual-total-pdiff.png", h),
+  p_annual_total_pdiff,
+  width = 8,
+  height = 3
+)
 
-"%s/val2-huc%02d-usgs-tethys-annual-total-pdiff.png" |>
-  sprintf(plot_dir, h) |>
-  ggsave(p_annual_total_pdiff, width = 8, height = 3)
-
-# --------------------------------------------------
-# annual pdiff lines
-# --------------------------------------------------
-demand_annual |>
-  ggplot() +
-  geom_line(aes(year, pdiff * 100, linetype = demand_sector)) +
-  facet_wrap(~water_use_type)
-
-# --------------------------------------------------
-# monthly total timeseries
-# --------------------------------------------------
+# Monthly total timeseries -------------------------------------------------
+# %%
 p_monthly_total = demand_monthly |>
   pivot_longer(c(usgs_km3, tethys_km3)) |>
   ggplot() +
-  # geom_line(aes(datetime, value, color = name)) +
   geom_boxplot(aes(factor(month(datetime)), value, fill = name)) +
-  facet_wrap(water_use_type ~ demand_sector, scales = 'free_y') +
-  scale_fill_manual("Dataset", values = colorblind_pal()(8)[1:2]) +
+  facet_wrap(water_use_type ~ demand_sector, scales = "free_y") +
+  scale_fill_manual(
+    "Dataset",
+    values = colorblind_pal()(8)[1:2],
+    expand = expansion(mult = c(0, 0))
+  ) +
   labs(
     x = "",
     y = "Water Demand [km^3/year]",
-    title = 'USGS/Tethys total monthly water use'
+    title = "USGS/Tethys total monthly water use"
   ) +
   theme_bw() +
-  theme(legend.position = 'bottom')
-# scale_fill_discrete('')
-p_monthly_total
-"%s/val5-huc%02d-usgs-tethys-monthly-total.png" |>
-  sprintf(plot_dir, h) |>
-  ggsave(p_monthly_total, width = 10, height = 6)
+  theme(
+    legend.position = 'bottom',
+    legend.margin = margin(t = -20, b = 0, r = 0, l = 0)
+  )
 
+if (interactive()) {
+  print(p_monthly_total)
+}
+save_plot(
+  sprintf("val5-huc%02d-usgs-tethys-monthly-total.png", h),
+  p_monthly_total,
+  width = 10,
+  height = 6
+)
 
-# --------------------------------------------------
-# plot difference between tethys and USGS
-# --------------------------------------------------
+# HUC map: percent difference Tethys vs USGS ------------------------------
+# %%
 huc_diff_agg_data = huc_shape |>
   left_join(ave_diff_huc, by = "huc")
 
@@ -286,13 +310,9 @@ plot_huc_map_diff = function(
     filter(!is.na(!!as.name(varname))) |>
     ggplot(aes(fill = !!as.name(varname))) +
     geom_sf(linewidth = ifelse(h > 8, .001, .01)) +
-    # scale_fill_viridis_c("Average difference\nin water demand\n[USGS-Tethys]\n(MGD)", option = "G") +
-    # https://stackoverflow.com/questions/37482977/
-    # what-is-a-good-palette-for-divergent-colors-in-r-or-can-viridis-and-magma-b
     facet_grid(water_use_type ~ demand_sector) +
     scale_fill_scico(
       color_label,
-      # palette = "vik", "broc", "roma", "cork"
       palette = ifelse(diff_type == "diff", "roma", "batlow"),
       midpoint = ifelse(diff_type == "diff", 0, NA),
       trans = color_trans
@@ -300,31 +320,28 @@ plot_huc_map_diff = function(
     labs(title = title) +
     theme_void() +
     theme(
-      # legend.position = "inside",
-      # legend.position.inside = c(.9, .2),
       legend.position = "bottom",
       strip.text.y.right = element_text(angle = -90),
       strip.text.x = element_text(margin = margin(b = 5)),
       panel.grid = element_blank(),
-      plot.background = element_rect(fill = 'white', colour = NA)
+      plot.background = element_rect(fill = "white", colour = NA)
     )
 }
 
 p_map_ave_pdiff_huc = plot_huc_map_diff(
   huc_diff_agg_data,
-  "Annual ave HUC %s Tethys vs. USGS water demand" |>
-    sprintf(h),
+  sprintf("Annual ave HUC %s Tethys vs. USGS water demand", h),
   "pdiff"
 )
-p_map_ave_pdiff_huc
-"%s/val3-huc%02d-pdiff-usgs-tethys.png" |>
-  sprintf(plot_dir, h) |>
-  ggsave(p_map_ave_pdiff_huc, width = 10, height = 5)
+save_plot(
+  sprintf("val3-huc%02d-pdiff-usgs-tethys.png", h),
+  p_map_ave_pdiff_huc,
+  width = 10,
+  height = 5
+)
 
+# %% Scatter: USGS vs Tethys per HUC -----------------------------------------
 
-# --------------------------------------------------
-# scatter plots
-# --------------------------------------------------
 cordf = ave_diff_huc |>
   group_by(water_use_type, demand_sector) |>
   summarise(
@@ -337,27 +354,27 @@ cordf = ave_diff_huc |>
 p_scatter = ave_diff_huc |>
   ggplot() +
   geom_point(aes(mean_usgs, mean_tethys)) +
-  facet_wrap(water_use_type ~ demand_sector, scales = 'free') +
+  facet_wrap(water_use_type ~ demand_sector, scales = "free") +
   geom_abline(slope = 1) +
   geom_text(
     aes(x, y, label = label, hjust = hjustvar, vjust = vjustvar),
     data = cordf
   ) +
   theme_bw() +
-  theme(plot.background = element_rect(fill = 'white')) +
+  theme(plot.background = element_rect(fill = "white")) +
   labs(
-    x = 'USGS Annual Average Volume [km^3]',
-    y = 'USGS Annual Average Volume [km^3]'
+    x = "USGS Annual Average Volume [km^3]",
+    y = "Tethys Annual Average Volume [km^3]"
   )
-p_scatter
-"%s/val4-huc%02d-scatter-usgs-tethys.png" |>
-  sprintf(plot_dir, h) |>
-  ggsave(p_scatter, width = 8, height = 5)
+save_plot(
+  sprintf("val4-huc%02d-scatter-usgs-tethys.png", h),
+  p_scatter,
+  width = 8,
+  height = 5
+)
 
-# --------------------------------------------------
-# max use plot
-# --------------------------------------------------
-
+# Dominant sector map -----------------------------------------------------
+# %%
 # read usgs-tethys demand data
 demand_huc_all_list = list()
 huci = 0
@@ -404,53 +421,107 @@ p_dominant_sector = sector |>
   )
 
 p_dominant_sector
-"%s/usage1-dominant-sector-tethys-grid.png" |>
-  sprintf(plot_dir) |>
-  ggsave(p_dominant_sector, width = 10, height = 5)
+save_plot(
+  "usage1-dominant-sector-tethys-grid.png",
+  p_dominant_sector,
+  width = 10,
+  height = 5
+)
 
+# # Okabe-Ito colorblind-safe palette (Wong 2011, Nature Methods 8:441),
+# # matching the prior published version from 5d-dominant-sector-map.py.
+# sector_palette = c(
+#   "Domestic" = "#0072b2", # blue
+#   "Electricity" = "#d55e00", # vermillion
+#   "Irrigation" = "#009e73", # bluish green
+#   "Livestock" = "#e69f00", # orange
+#   "Manufacturing" = "#cc79a7", # reddish purple
+#   "Mining" = "#56b4e9" # sky blue
+# )
 
-# --------------------------------------------------
-# projection plot
-# --------------------------------------------------
+# sector = read_csv("data/tethys_dominant_sector_by_grid_cell.csv") |>
+#   pivot_longer(
+#     -c(lat, lon, spatial_ref),
+#     names_to = "sector",
+#     values_to = "demand"
+#   )
+
+# p_dominant_sector = sector |>
+#   group_by(lon, lat) |>
+#   mutate(demand_fix = ifelse(demand == 0, NA, demand)) |>
+#   reframe(sector = sector[which.max(demand_fix)]) |>
+#   mutate(sector = factor(sector, levels = names(sector_palette))) |>
+#   ggplot() +
+#   geom_raster(aes(lon, lat, fill = sector)) +
+#   scale_fill_manual("Demand\nSector", values = sector_palette, drop = FALSE) +
+#   coord_quickmap() +
+#   theme_void() +
+#   theme(
+#     plot.background = element_rect(fill = "white", colour = NA),
+#     legend.position = "bottom"
+#   )
+
+# save_plot(
+#   "usage1-dominant-sector-tethys-grid.png",
+#   p_dominant_sector,
+#   width = 10,
+#   height = 5
+# )
+
+# %% Multi-HUC re-load for scenario projections ------------------------------
+
+demand_huc_all_list = list()
+huci = 0
+for (h in c(2, 4, 6, 8)) {
+  huci = huci + 1
+  huc_demand_files = list.files(
+    input_data_dir,
+    paste0("huc", sprintf("%02d", h), "-*"),
+    full.names = TRUE
+  )
+  demand_huc_all_list[[huci]] = huc_demand_files |>
+    map(read_demand_file) |>
+    bind_rows() |>
+    mutate(huc_scale = h)
+}
+demand_huc_all = bind_rows(demand_huc_all_list) |>
+  mutate(water_use_type = str_to_title(water_use_type))
+
+# %% Scenario projection plot ------------------------------------------------
 
 scenarios = c(
-  'historical',
-  'rcp45cooler_ssp3',
-  'rcp45cooler_ssp5',
-  'rcp45hotter_ssp3',
-  'rcp45hotter_ssp5',
-  'rcp85cooler_ssp3',
-  'rcp85cooler_ssp5',
-  'rcp85hotter_ssp3',
-  'rcp85hotter_ssp5'
+  "historical",
+  "rcp45cooler_ssp3",
+  "rcp45cooler_ssp5",
+  "rcp45hotter_ssp3",
+  "rcp45hotter_ssp5",
+  "rcp85cooler_ssp3",
+  "rcp85cooler_ssp5",
+  "rcp85hotter_ssp3",
+  "rcp85hotter_ssp5"
 )
 
 read_tethys_file = function(fn) {
-  fn_split = str_split(fn, '_')
+  fn_split = str_split(fn, "_")
   demand_category = fn_split[[1]][2]
   demand_type = fn_split[[1]][3]
-  # TODO could add error checking here
   read_csv(fn) |>
     mutate(sector = demand_category, water_use_type = demand_type)
 }
 
-
-# combine demand category files
 read_tethys_scenario_data = function(dir, scenario, h) {
   huc_demand_files = list.files(
     input_data_dir,
-    paste0('*huc', sprintf('%s', h), '_', scenario),
-    full.names = T
+    paste0("*huc", sprintf("%s", h), "_", scenario),
+    full.names = TRUE
   )
 
-  demand_huc_all = huc_demand_files |>
+  huc_demand_files |>
     map(read_tethys_file) |>
     bind_rows() |>
     mutate(huc_scale = h) |>
     mutate(water_use_type = str_to_title(water_use_type)) |>
     filter(huc_scale == h)
-
-  demand_huc_all
 }
 
 h = 2
@@ -462,7 +533,6 @@ tethys_projections_huc2 = map(scenarios, function(scenario) {
   group_by(year, sector, water_use_type, scenario) |>
   summarise(demand_km3 = sum(demand_km3))
 
-
 p_projections = tethys_projections_huc2 |>
   ggplot() +
   geom_line(aes(
@@ -471,16 +541,29 @@ p_projections = tethys_projections_huc2 |>
     linetype = water_use_type,
     color = scenario
   )) +
-  facet_wrap(~sector, scales = 'free') +
+  facet_wrap(~sector, scales = "free") +
   theme_bw() +
   scale_color_scico_d() +
   labs(
-    title = 'Tethys total US projected demands',
-    x = '',
-    y = 'Demand [km^3]'
+    title = "Tethys total US projected demands",
+    x = "",
+    y = "Demand [km^3]"
   )
 
 p_projections
-"%s/usage2-projections-tethys-timeseries.png" |>
-  sprintf(plot_dir) |>
-  ggsave(p_projections, width = 10, height = 5)
+save_plot(
+  "usage2-projections-tethys-timeseries.png",
+  p_projections,
+  width = 10,
+  height = 5
+)
+
+message(
+  "Done. Plots written to ",
+  local_plot_dir,
+  ifelse(
+    write_to_paper,
+    paste0(" and ", path.expand(paper_plot_dir)),
+    ""
+  )
+)
