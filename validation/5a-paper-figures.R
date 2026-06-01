@@ -518,11 +518,11 @@ save_plot(
 # %%
 demand_huc_all_list = list()
 huci = 0
-for (h in c(2, 4, 6, 8)) {
+for (hi in c(2, 4, 6, 8)) {
   huci = huci + 1
   huc_demand_files = list.files(
     input_data_dir,
-    paste0("huc", sprintf("%02d", h), "-*"),
+    paste0("huc", sprintf("%02d", hi), "-*"),
     full.names = TRUE
   )
   demand_huc_all_list[[huci]] = huc_demand_files |>
