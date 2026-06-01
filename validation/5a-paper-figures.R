@@ -188,7 +188,12 @@ ave_diff_monthly_huc = demand_huc_all |>
 
 # Annual total timeseries -------------------------------------------------
 # %%
+annual_cutoff_year = 2010
+annual_plot_years = annual_cutoff_year:2020
+annual_year_lab = paste0("'", annual_plot_years - 2000)
 p_annual_total = demand_annual |>
+  filter(year >= annual_cutoff_year) |>
+  mutate(year = as.integer(year)) |>
   mutate(plot_date = ISOdate(year, 1, 1)) |>
   pivot_longer(c(usgs_km3, tethys_km3)) |>
   mutate(
@@ -199,16 +204,28 @@ p_annual_total = demand_annual |>
   ) |>
   filter(huc_scale == h) |>
   ggplot() +
-  geom_line(aes(plot_date, value, color = name), linewidth = 1) +
+  geom_line(aes(year, value, color = name), linewidth = 1) +
   facet_grid(water_use_type ~ demand_sector, scales = "free") +
   scale_color_manual("Data Source", values = colorblind_pal()(8)[c(1, 2)]) +
+  scale_x_continuous(
+    breaks = annual_plot_years
+  ) +
   labs(
     x = "",
     y = "Water Demand [km^3/year]",
     title = "USGS/Tethys total annual water use"
   ) +
-  theme_bw() +
-  theme(legend.position = "bottom") +
+  theme_minimal() +
+  theme(
+    legend.position = "bottom",
+    legend.margin = margin(t = -20, b = 0, r = 0, l = 0),
+    panel.grid.minor = element_blank(),
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    panel.grid.major = element_line(colour = "grey90"),
+    plot.title.position = "plot",
+    strip.text = element_text(face = "bold"),
+    panel.border = element_rect(color = "black", fill = NA)
+  ) +
   scale_fill_discrete("")
 
 if (interactive()) {
@@ -233,18 +250,21 @@ p_annual_total_pdiff = demand_annual |>
   )) +
   facet_wrap(~demand_sector, nrow = 1) +
   scale_fill_discrete(
-    "Water UseType",
+    "Water Use Type",
     labels = c("C = Consumption", "W = Withdrawals"),
     expand = expansion(mult = c(0, 0))
   ) +
-  theme_bw() +
+  theme_minimal() +
   theme(
     legend.position = 'bottom',
-    legend.margin = margin(t = -20, b = 0, r = 0, l = 0)
+    legend.margin = margin(t = -20, b = 0, r = 0, l = 0),
+    strip.text = element_text(face = "bold"),
+    panel.border = element_rect(color = "black", fill = NA)
   ) +
   labs(
     x = "", #"Water Use Type [C = Consuption, W = Withdrawals]",
-    y = "Percent difference (USGS-Tethys) [%]"
+    y = "Percent difference (USGS-Tethys) [%]",
+    title = "Tethys vs. USGS annual water use percent difference"
   )
 
 if (interactive()) {
@@ -263,7 +283,11 @@ p_monthly_total = demand_monthly |>
   pivot_longer(c(usgs_km3, tethys_km3)) |>
   ggplot() +
   geom_boxplot(aes(factor(month(datetime)), value, fill = name)) +
-  facet_wrap(water_use_type ~ demand_sector, scales = "free_y") +
+  facet_wrap(
+    vars(demand_sector, water_use_type),
+    labeller = label_wrap_gen(multi_line = FALSE),
+    scales = "free_y"
+  ) +
   scale_fill_manual(
     "Dataset",
     values = colorblind_pal()(8)[1:2],
@@ -274,10 +298,12 @@ p_monthly_total = demand_monthly |>
     y = "Water Demand [km^3/year]",
     title = "USGS/Tethys total monthly water use"
   ) +
-  theme_bw() +
+  theme_minimal() +
   theme(
     legend.position = 'bottom',
-    legend.margin = margin(t = -20, b = 0, r = 0, l = 0)
+    legend.margin = margin(t = -20, b = 0, r = 0, l = 0),
+    strip.text = element_text(face = "bold"),
+    panel.border = element_rect(color = "black", fill = NA)
   )
 
 if (interactive()) {
@@ -286,7 +312,7 @@ if (interactive()) {
 save_plot(
   sprintf("val5-huc%02d-usgs-tethys-monthly-total.png", h),
   p_monthly_total,
-  width = 10,
+  width = 8,
   height = 6
 )
 
@@ -333,6 +359,9 @@ p_map_ave_pdiff_huc = plot_huc_map_diff(
   sprintf("Annual ave HUC %s Tethys vs. USGS water demand", h),
   "pdiff"
 )
+if (interactive()) {
+  print(p_map_ave_pdiff_huc)
+}
 save_plot(
   sprintf("val3-huc%02d-pdiff-usgs-tethys.png", h),
   p_map_ave_pdiff_huc,
@@ -340,7 +369,15 @@ save_plot(
   height = 5
 )
 
-# %% Scatter: USGS vs Tethys per HUC -----------------------------------------
+# Scatter: USGS vs Tethys per HUC -----------------------------------------
+# %%
+# Basin area in km^2 from the HUC shapefile, projected to Albers Equal Area
+# CONUS (EPSG:5070) so areas are meaningful regardless of source CRS.
+huc_area = huc_shape |>
+  st_transform(5070) |>
+  mutate(area_km2 = as.numeric(st_area(geometry)) / 1e6) |>
+  st_drop_geometry() |>
+  select(huc, area_km2)
 
 cordf = ave_diff_huc |>
   group_by(water_use_type, demand_sector) |>
@@ -351,21 +388,37 @@ cordf = ave_diff_huc |>
     vjustvar = 1.5,
     label = paste0("r=", cor(mean_tethys, mean_usgs) |> round(3))
   )
+
 p_scatter = ave_diff_huc |>
+  left_join(huc_area, by = "huc") |>
   ggplot() +
-  geom_point(aes(mean_usgs, mean_tethys)) +
+  geom_point(aes(mean_usgs, mean_tethys, color = area_km2), size = 2.5) +
   facet_wrap(water_use_type ~ demand_sector, scales = "free") +
   geom_abline(slope = 1) +
   geom_text(
     aes(x, y, label = label, hjust = hjustvar, vjust = vjustvar),
     data = cordf
   ) +
-  theme_bw() +
-  theme(plot.background = element_rect(fill = "white")) +
+  theme_minimal() +
+  theme(
+    legend.position = "bottom",
+    panel.border = element_rect(color = "black", fill = NA)
+  ) +
   labs(
     x = "USGS Annual Average Volume [km^3]",
     y = "Tethys Annual Average Volume [km^3]"
+  ) +
+  scale_color_viridis_c(
+    name = expression("Basin area [km"^2 * "]"),
+    option = "G",
+    direction = -1,
+    trans = "log10",
+    labels = scales::label_comma()
   )
+
+if (interactive()) {
+  print(p_scatter)
+}
 save_plot(
   sprintf("val4-huc%02d-scatter-usgs-tethys.png", h),
   p_scatter,
@@ -468,8 +521,8 @@ save_plot(
 #   height = 5
 # )
 
-# %% Multi-HUC re-load for scenario projections ------------------------------
-
+# Multi-HUC re-load for scenario projections ------------------------------
+# %%
 demand_huc_all_list = list()
 huci = 0
 for (h in c(2, 4, 6, 8)) {
@@ -487,7 +540,15 @@ for (h in c(2, 4, 6, 8)) {
 demand_huc_all = bind_rows(demand_huc_all_list) |>
   mutate(water_use_type = str_to_title(water_use_type))
 
-# %% Scenario projection plot ------------------------------------------------
+# Scenario projection plot ------------------------------------------------
+# %%
+output_file = file.path(
+  plot_dir,
+  "usage2-scenarios-annual-conus-timeseries.png"
+)
+
+# Default to withdrawals; flip to "consumption" to produce the consumption panel.
+demand_type = "withdrawals"
 
 scenarios = c(
   "historical",
@@ -501,69 +562,207 @@ scenarios = c(
   "rcp85hotter_ssp5"
 )
 
-read_tethys_file = function(fn) {
-  fn_split = str_split(fn, "_")
-  demand_category = fn_split[[1]][2]
-  demand_type = fn_split[[1]][3]
-  read_csv(fn) |>
-    mutate(sector = demand_category, water_use_type = demand_type)
+sectors = c("Domestic", "Electricity", "Irrigation")
+
+# Extend the historical line through 2019 (the last year of the historical
+# Tethys output) and join each future scenario to the historical line at
+# 2019 so the eye sees a single continuous trace, not a 2015->2020 gap.
+historical_cutoff = 2020
+
+# %% Helpers
+
+# Sum all sector sub-variables across (lat, lon) per year, returning a
+# tibble with columns (year, demand_km3).
+read_annual_sum = function(path) {
+  if (!file.exists(path)) {
+    return(tibble(year = integer(), demand_km3 = numeric()))
+  }
+  nc = nc_open(path)
+  on.exit(nc_close(nc))
+
+  years = ncvar_get(nc, "year")
+  # All variables except coordinate vars / spatial_ref
+  var_names = setdiff(names(nc$var), c("lat", "lon", "spatial_ref"))
+
+  total_per_year = rep(0, length(years))
+  for (v in var_names) {
+    arr = ncvar_get(nc, v) # shape (lon, lat, year) per R's column-major load
+    # Sum across spatial dims, leaving one value per year
+    total_per_year = total_per_year +
+      apply(arr, length(dim(arr)), sum, na.rm = TRUE)
+  }
+
+  tibble(year = as.integer(years), demand_km3 = total_per_year)
 }
 
-read_tethys_scenario_data = function(dir, scenario, h) {
-  huc_demand_files = list.files(
-    input_data_dir,
-    paste0("*huc", sprintf("%s", h), "_", scenario),
-    full.names = TRUE
+# Parse scenario string into rcp / climate / ssp components for aesthetics.
+parse_scenario = function(s) {
+  if (s == "historical") {
+    tibble(
+      scenario = s,
+      rcp = "historical",
+      climate = NA_character_,
+      ssp = NA_character_
+    )
+  } else {
+    # e.g. "rcp45cooler_ssp3"
+    m = str_match(s, "^rcp(45|85)(cooler|hotter)_ssp([35])$")
+    tibble(
+      scenario = s,
+      rcp = paste0("RCP", str_sub(m[, 2], 1, 1), ".", str_sub(m[, 2], 2, 2)),
+      climate = m[, 3],
+      ssp = paste0("SSP", m[, 4])
+    )
+  }
+}
+
+# %% Load every scenario x sector
+
+message("Loading ", demand_type, " from ", tethys_base)
+
+demand = expand_grid(scenario = scenarios, sector = sectors) |>
+  mutate(
+    path = file.path(
+      tethys_base,
+      scenario,
+      paste0(sector, "_", demand_type, ".nc")
+    )
+  ) |>
+  mutate(data = map(path, read_annual_sum)) |>
+  select(-path) |>
+  unnest(data)
+
+# Add Total (sum across sectors)
+total_by_sector = demand |>
+  group_by(scenario, year) |>
+  summarise(demand_km3 = sum(demand_km3), .groups = "drop") |>
+  mutate(sector = "Total")
+
+demand_all = bind_rows(demand, total_by_sector) |>
+  mutate(
+    sector = factor(
+      sector,
+      levels = c("Domestic", "Electricity", "Irrigation", "Total")
+    )
+  ) |>
+  left_join(map_dfr(scenarios, parse_scenario), by = "scenario")
+
+# Clip historical tail so it visually hands off to the future lines at 2019
+demand_all = demand_all |>
+  filter(!(scenario == "historical" & year > historical_cutoff))
+
+# Connect each future scenario to the historical line: prepend the 2019
+# historical demand as the future scenario's value at year 2019, so the future
+# lines visually originate from the historical curve rather than starting in
+# mid-air at 2020.
+historical_2019 = demand_all |>
+  filter(scenario == "historical", year == historical_cutoff) |>
+  select(sector, demand_km3_hist = demand_km3)
+
+future_starts = demand_all |>
+  filter(scenario != "historical") |>
+  distinct(scenario, sector, rcp, climate, ssp) |>
+  left_join(historical_2019, by = "sector") |>
+  transmute(
+    scenario,
+    sector,
+    rcp,
+    climate,
+    ssp,
+    year = historical_cutoff,
+    demand_km3 = demand_km3_hist
   )
 
-  huc_demand_files |>
-    map(read_tethys_file) |>
-    bind_rows() |>
-    mutate(huc_scale = h) |>
-    mutate(water_use_type = str_to_title(water_use_type)) |>
-    filter(huc_scale == h)
-}
+demand_all = bind_rows(demand_all, future_starts) |>
+  arrange(scenario, sector, year)
 
-h = 2
-tethys_projections_huc2 = map(scenarios, function(scenario) {
-  read_tethys_scenario_data(input_data_dir, scenario, h) |>
-    mutate(scenario = scenario)
-}) |>
-  bind_rows() |>
-  group_by(year, sector, water_use_type, scenario) |>
-  summarise(demand_km3 = sum(demand_km3))
+# %% Plot
 
-p_projections = tethys_projections_huc2 |>
-  ggplot() +
-  geom_line(aes(
-    year,
-    demand_km3,
-    linetype = water_use_type,
-    color = scenario
-  )) +
-  facet_wrap(~sector, scales = "free") +
-  theme_bw() +
-  scale_color_scico_d() +
+# Earth-toned palette per Cameron's preferences.
+# RCP carries the emissions-pathway information so it gets the strongest
+# visual channel (hue).
+scenario_colors = c(
+  "historical" = "#2a2a2a",
+  "RCP4.5" = "#3d6b7a", # muted blue-teal (lower emissions)
+  "RCP8.5" = "#a8501c" # rust (higher emissions)
+)
+
+# SSP carries socio-economic pathway (linetype).
+ssp_linetypes = c("SSP3" = "solid", "SSP5" = "dashed")
+
+# cooler/hotter carries climate-model variability (line width).
+climate_widths = c("cooler" = 0.45, "hotter" = 0.85)
+
+# Build a single line aesthetic by combining rcp for color, ssp for type,
+# climate for width. Historical gets a plain black line.
+p = ggplot() +
+  # Future scenarios
+  geom_line(
+    data = demand_all |> filter(scenario != "historical"),
+    aes(
+      x = year,
+      y = demand_km3,
+      group = scenario,
+      color = rcp,
+      linetype = ssp,
+      linewidth = climate
+    )
+  ) +
+  # Historical, drawn on top with distinct styling
+  geom_line(
+    data = demand_all |> filter(scenario == "historical"),
+    aes(x = year, y = demand_km3, group = scenario),
+    color = scenario_colors["historical"],
+    linewidth = 0.9
+  ) +
+  facet_wrap(~sector, scales = "free_y", ncol = 2) +
+  scale_color_manual(
+    values = scenario_colors,
+    breaks = c("RCP4.5", "RCP8.5"),
+    name = "RCP"
+  ) +
+  scale_linetype_manual(values = ssp_linetypes, name = "SSP") +
+  scale_linewidth_manual(values = climate_widths, name = "Climate") +
+  scale_x_continuous(breaks = seq(1980, 2100, 20)) +
   labs(
-    title = "Tethys total US projected demands",
-    x = "",
-    y = "Demand [km^3]"
+    x = NULL,
+    y = expression("Annual CONUS demand (km"^3 * " yr"^-1 * ")"),
+    title = paste0(
+      "Annual CONUS water ",
+      demand_type,
+      " by sector and scenario"
+    ),
+    subtitle = "Historical (black, 1975–2015) and eight future scenarios (2020–2100)."
+  ) +
+  theme_minimal(base_size = 11) +
+  theme(
+    panel.grid.minor = element_blank(),
+    panel.grid.major = element_line(colour = "grey90"),
+    plot.title.position = "plot",
+    strip.text = element_text(face = "bold"),
+    legend.position = "bottom",
+    legend.box = "horizontal",
+    legend.margin = margin(t = -5)
+  ) +
+  guides(
+    color = guide_legend(order = 1, override.aes = list(linewidth = 0.8)),
+    linetype = guide_legend(order = 2, override.aes = list(linewidth = 0.8)),
+    linewidth = guide_legend(order = 3)
   )
 
-p_projections
-save_plot(
-  "usage2-projections-tethys-timeseries.png",
-  p_projections,
-  width = 10,
-  height = 5
+# %% Save
+
+if (interactive()) {
+  print(p)
+}
+message("Writing ", output_file)
+ggsave(
+  output_file,
+  plot = p,
+  width = 9,
+  height = 6,
+  dpi = 200,
+  bg = "white"
 )
 
-message(
-  "Done. Plots written to ",
-  local_plot_dir,
-  ifelse(
-    write_to_paper,
-    paste0(" and ", path.expand(paper_plot_dir)),
-    ""
-  )
-)
+message("Done.")

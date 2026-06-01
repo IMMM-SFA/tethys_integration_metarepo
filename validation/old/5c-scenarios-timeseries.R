@@ -19,7 +19,7 @@ options(
 # %% Settings
 
 tethys_base = "/Volumes/data/tethys/output_adjusted_usgs_method2"
-plot_dir = "~/Dropbox/Apps/Overleaf/TETHYS data paper/"
+plot_dir = "figures/"
 output_file = file.path(plot_dir, "val6-scenarios-annual-conus-timeseries.png")
 
 # Default to withdrawals; flip to "consumption" to produce the consumption panel.
@@ -227,6 +227,9 @@ p = ggplot() +
 
 # %% Save
 
+if (interactive()) {
+  print(p)
+}
 message("Writing ", output_file)
 ggsave(
   output_file,
