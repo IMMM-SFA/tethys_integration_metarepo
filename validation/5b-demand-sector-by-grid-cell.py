@@ -3,9 +3,12 @@ import geopandas as gpd
 import xagg as xa
 import pandas as pd
 import os
+import yaml
 
-path = "/Volumes/data/tethys/output/historical/"
-output_path = "data"
+P = yaml.safe_load(open("paths.yml"))
+
+path = f"{P['tethys_output_raw']}/historical/"
+output_path = P["data_dir"]
 # demand_type = "withdrawals"
 # demand_category = "Irrigation"
 hucs_to_compute = [2, 4, 6, 8]

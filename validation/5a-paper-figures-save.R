@@ -25,11 +25,11 @@ options(
 
 # Settings ---------------------------------------------------------------
 # %%
-P = yaml::read_yaml("paths.yml")
-input_data_dir = P$data_dir
-local_plot_dir = P$figures_dir
-paper_plot_dir = P$paper_figures_dir
-tethys_base = P$tethys_output_canonical
+input_data_dir = "data"
+local_plot_dir = "figures"
+paper_plot_dir = "../paper/figures"
+shapefile_path = "/Volumes/data/shapefiles"
+tethys_base = "/Volumes/data/tethys/output_adjusted_usgs_method2"
 
 # Set to TRUE to write to the paper directory in addition to the local directory.
 write_to_paper = TRUE
@@ -128,7 +128,8 @@ demand_monthly_sum = demand_monthly |>
   group_by(datetime, huc_scale, water_use_type) |>
   summarise(usgs_km3 = sum(usgs_km3), tethys_km3 = sum(tethys_km3))
 
-huc_shape = P[[sprintf("huc%s_shapefile", h)]] |>
+huc_shape = "%s/HUC%s/HUC%s.shp" |>
+  sprintf(shapefile_path, h, h) |>
   st_read(quiet = TRUE) |>
   rename(huc = as.name(!!huc_name)) |>
   mutate(huc2 = substr(huc, 1, 2)) |>
@@ -381,11 +382,7 @@ p_scatter = ave_diff_huc |>
   left_join(huc_area, by = "huc") |>
   ggplot() +
   geom_point(aes(mean_usgs, mean_tethys, color = area_km2), size = 2.5) +
-  facet_wrap(
-    water_use_type ~ demand_sector,
-    scales = "free",
-    labeller = label_wrap_gen(multi_line = FALSE)
-  ) +
+  facet_wrap(water_use_type ~ demand_sector, scales = "free") +
   geom_abline(slope = 1) +
   geom_text(
     aes(x, y, label = label, hjust = hjustvar, vjust = vjustvar),
@@ -394,8 +391,7 @@ p_scatter = ave_diff_huc |>
   theme_minimal() +
   theme(
     legend.position = "bottom",
-    panel.border = element_rect(color = "black", fill = NA),
-    strip.text = element_text(face = "bold")
+    panel.border = element_rect(color = "black", fill = NA)
   ) +
   labs(
     x = "USGS Annual Average Volume [km^3]",
@@ -406,7 +402,8 @@ p_scatter = ave_diff_huc |>
     name = expression("Basin area [km"^2 * "]"),
     option = "G",
     direction = -1,
-    trans = "log10"
+    trans = "log10",
+    labels = scales::label_comma()
   )
 
 if (interactive()) {
@@ -424,18 +421,18 @@ save_plot(
 # read usgs-tethys demand data
 demand_huc_all_list = list()
 huci = 0
-for (hi in c(2, 4, 6, 8)) {
+for (h in c(2, 4, 6, 8)) {
   huci = huci + 1
   # combine demand category files
   huc_demand_files = list.files(
     input_data_dir,
-    paste0('huc', sprintf('%02d', hi), '-*'),
+    paste0('huc', sprintf('%02d', h), '-*'),
     full.names = T
   )
   demand_huc_all_list[[huci]] = huc_demand_files |>
     map(read_demand_file) |>
     bind_rows() |>
-    mutate(huc_scale = hi)
+    mutate(huc_scale = h)
 }
 demand_huc_all = bind_rows(demand_huc_all_list) |>
   mutate(water_use_type = str_to_title(water_use_type))

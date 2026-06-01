@@ -1,0 +1,36 @@
+# Single source of truth for input/output paths used by the numbered
+# validation pipeline (1a, 1c, 2a, 4a, 4b, 5a, 5b).
+#
+# Scripts read this directly with PyYAML (Python) / yaml::read_yaml (R)
+# and resolve paths themselves. Paths may be absolute or relative; relative
+# values should be interpreted relative to the validation/ directory
+# (i.e. the script's CWD when run via the pixi tasks).
+
+# Tethys output roots — per-scenario subdirs with *_{withdrawals,
+# consumption}.nc per sector and gridded_runoff_shares.nc.
+tethys_output_canonical: /Volumes/data/tethys/output_adjusted_usgs_method2  # post-adjust; used by 5a/5d/6
+tethys_output_raw: /Volumes/data/tethys/output_adjusted_usgs_method2        # pre-adjust; used by 1a/1c/5b
+
+# Per-HUC pre-aggregated Tethys CSVs (4b). Keys: sector, demand_type, huc_level.
+tethys_validation_csv_pattern: data/tethys_{sector}_{demand_type}_huc{huc_level}.csv
+
+# USGS-2025 reference data (2a)
+usgs_public_supply_cu: /Volumes/data/tethys/USGS-2025/pscutot_wu-public-supply-cu_CONUS_200901-202012_wide.csv
+usgs_public_supply_wd: /Volumes/data/tethys/USGS-2025/pswdtot_wu-public-supply-wd_CONUS_200001-202012_wide.csv
+usgs_irrigation_cu:    /Volumes/data/tethys/USGS-2025/irrcutot_wu-irrigation-cu_CONUS_200001-202012_wide.csv
+usgs_irrigation_wd:    /Volumes/data/tethys/USGS-2025/irrwdtot_wu-irrigation-wd_CONUS_200001-202012_wide.csv
+usgs_thermoelectric:   /Volumes/data/tethys/USGS-2025/combined_wu-thermoelectric_CONUS_200801-202012_long.csv
+
+# HUC shapefiles. HUC6 is bundled with the metarepo; the others stay on
+# /Volumes for now. Override any level here without touching scripts.
+huc2_shapefile:  /Volumes/data/shapefiles/HUC2/HUC2.shp
+huc4_shapefile:  /Volumes/data/shapefiles/HUC4/HUC4.shp
+huc6_shapefile:  ../data/shapefiles/HUC6/HUC6.shp
+huc8_shapefile:  /Volumes/data/shapefiles/HUC8/HUC8.shp
+huc12_shapefile: /Volumes/data/shapefiles/HUC12/HUC12.shp
+
+# Working directories (relative to validation/)
+data_dir: data
+figures_dir: figures
+paper_figures_dir: ../paper/figures
+main_data_dir: ../data

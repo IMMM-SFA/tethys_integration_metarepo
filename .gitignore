@@ -4,8 +4,9 @@
 # pyenv
 .python-version
 
-# data
-data/
+# data — tracked README only; everything else lives on MSD-Live
+data/*
+!data/README.md
 
 # outputs
 output/*

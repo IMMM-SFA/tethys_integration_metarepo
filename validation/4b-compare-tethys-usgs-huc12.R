@@ -16,6 +16,7 @@ options(
   dplyr.summarise.inform = FALSE
 )
 
+P = yaml::read_yaml("paths.yml")
 
 km3_per_year_TO_Mgal_per_day <- 264172.1 / 365
 km3_in_one_million_gallons <- 3.785412e-06 # 1e6/264172052358.15
@@ -128,8 +129,10 @@ for (tethys_demand_category in demand_categories) {
         #   summarise(usgs_mgd = sum(usgs_mgd)) |>
         #   mutate(usgs_mgy=usgs_mgd*365)
 
-        tethys_demand_huc <- "/Volumes/data/tethys/tethys_%s_%s_huc%s.csv" |>
-          sprintf(tethys_demand_category, demand_type, h) |>
+        tethys_demand_huc <- P$tethys_validation_csv_pattern |>
+          str_replace("\\{sector\\}", tethys_demand_category) |>
+          str_replace("\\{demand_type\\}", demand_type) |>
+          str_replace("\\{huc_level\\}", as.character(h)) |>
           read_csv() |>
           mutate(datetime = ymd(sprintf("%s-%s-01", year, month))) |>
           # rename(huc = as.name(!!huc_name)) |>
@@ -162,8 +165,7 @@ for (tethys_demand_category in demand_categories) {
             km3_ratio = usgs_km3 / tethys_km3
           )
 
-        huc_shape <- "/Volumes/data/shapefiles/HUC%s/HUC%s.shp" |>
-          sprintf(h, h) |>
+        huc_shape <- P[[sprintf("huc%s_shapefile", h)]] |>
           st_read(quiet = TRUE) |>
           rename(huc = as.name(!!huc_name)) |>
           mutate(huc2 = substr(huc, 1, 2)) |>

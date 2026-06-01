@@ -15,8 +15,9 @@ options(
   dplyr.summarise.inform = FALSE
 )
 
-input_data_dir = 'data'
-plot_dir = 'figures/'
+P = yaml::read_yaml("paths.yml")
+input_data_dir = P$data_dir
+plot_dir = paste0(P$figures_dir, "/")
 
 hucs = 6 #c(2, 4, 6, 8)
 
@@ -96,8 +97,7 @@ for (h in hucs) {
     group_by(datetime, huc_scale, water_use_type) |>
     summarise(usgs_km3 = sum(usgs_km3), tethys_km3 = sum(tethys_km3))
 
-  huc_shape = "/Volumes/data/shapefiles/HUC%s/HUC%s.shp" |>
-    sprintf(h, h) |>
+  huc_shape = P[[sprintf("huc%s_shapefile", h)]] |>
     st_read(quiet = TRUE) |>
     rename(huc = as.name(!!huc_name)) |>
     mutate(huc2 = substr(huc, 1, 2)) |>

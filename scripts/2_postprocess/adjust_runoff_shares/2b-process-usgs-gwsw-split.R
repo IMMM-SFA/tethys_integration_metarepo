@@ -214,7 +214,7 @@ usgs_irr_huc2 |>
   theme_void()
 
 
-tethys_huc2 = read_csv('data/tethys_runoff_share_huc2.csv') |>
+tethys_huc2 = read_csv('../../../validation/data/tethys_runoff_share_huc2.csv') |>
   group_by(huc2) |>
   summarise(gw_frac = 1 - mean(share)) |>
   left_join(huc2_shape, by = join_by(huc2)) |>
@@ -276,5 +276,5 @@ for (timestamp in timestamps) {
 brick <- rast(raster_list)
 
 # Save RasterBrick to NetCDF
-writeCDF(brick, "data/usgs-runoff-share-2009-2020.nc", overwrite = TRUE)
+writeCDF(brick, "usgs-runoff-share-2009-2020.nc", overwrite = TRUE)
 print("NetCDF file saved.")

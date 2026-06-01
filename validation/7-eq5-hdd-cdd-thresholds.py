@@ -33,21 +33,26 @@ import pandas as pd
 import xarray as xr
 import matplotlib.pyplot as plt
 
+import yaml
+
+P = yaml.safe_load(open("paths.yml"))
+
 HERE = Path(__file__).resolve().parent
-HDDCDD_DIR = Path(
-    "/Volumes/data/m5-backup/projects/im3/water-scarcity/"
-    "tethys_integration_metarepo/data/historical"
-)
-OUT = HERE.parent.parent / "tethys-data-paper" / "figures"
-OUT.mkdir(exist_ok=True, parents=True)
+HDDCDD_DIR = Path(P["main_data_dir"]) / "historical"
+
+OUT_PAPER = Path(P["paper_figures_dir"])
+OUT_PAPER.mkdir(exist_ok=True, parents=True)
+
+OUT_LOCAL = Path(P["figures_dir"])
+OUT_LOCAL.mkdir(exist_ok=True, parents=True)
 
 # Threshold scenarios: default plus +/- 50%
 DEFAULT_HDD = 650
 DEFAULT_CDD = 450
 SCENARIOS = {
-    "low": (DEFAULT_HDD * 0.5, DEFAULT_CDD * 0.5),       # (325, 225)
-    "default": (DEFAULT_HDD, DEFAULT_CDD),                # (650, 450)
-    "high": (DEFAULT_HDD * 1.5, DEFAULT_CDD * 1.5),       # (975, 675)
+    "low": (DEFAULT_HDD * 0.5, DEFAULT_CDD * 0.5),  # (325, 225)
+    "default": (DEFAULT_HDD, DEFAULT_CDD),  # (650, 450)
+    "high": (DEFAULT_HDD * 1.5, DEFAULT_CDD * 1.5),  # (975, 675)
 }
 
 # illustrative GCAM-USA shares (heating, cooling, other)
@@ -63,6 +68,7 @@ ds = xr.open_mfdataset(nc_files, combine="by_coords")
 # annual sums
 hdd_annual = ds["HDD"].sum(dim="month")  # (year, lat, lon)
 cdd_annual = ds["CDD"].sum(dim="month")
+
 
 # %% per-scenario partition fractions
 def assign_case(h_annual, c_annual, hdd_thr, cdd_thr):
@@ -107,12 +113,12 @@ for name, (hdd_thr, cdd_thr) in SCENARIOS.items():
 # h_hat, c_hat depend on case: case 1 (HDD/H, CDD/C); case 2 (HDD/H, HDD/H);
 # case 3 (CDD/C, CDD/C); case 4 (1/12, 1/12).
 
-H_y = ds["HDD"].sum(dim="month")   # (year, lat, lon)
+H_y = ds["HDD"].sum(dim="month")  # (year, lat, lon)
 C_y = ds["CDD"].sum(dim="month")
-HDD_m = ds["HDD"]                  # (year, month, lat, lon)
+HDD_m = ds["HDD"]  # (year, month, lat, lon)
 CDD_m = ds["CDD"]
 EPS = 1e-9
-hdd_share = HDD_m / (H_y + EPS)    # (year, month, lat, lon)
+hdd_share = HDD_m / (H_y + EPS)  # (year, month, lat, lon)
 cdd_share = CDD_m / (C_y + EPS)
 uniform = xr.full_like(hdd_share, 1 / 12)
 
@@ -121,14 +127,14 @@ for name, (hdd_thr, cdd_thr) in SCENARIOS.items():
     case = assign_case(H_y, C_y, hdd_thr, cdd_thr)
     case_b = case.broadcast_like(HDD_m)
     h_hat = xr.where(
-        case_b == 1, hdd_share,
-        xr.where(case_b == 2, hdd_share,
-                 xr.where(case_b == 3, cdd_share, uniform))
+        case_b == 1,
+        hdd_share,
+        xr.where(case_b == 2, hdd_share, xr.where(case_b == 3, cdd_share, uniform)),
     )
     c_hat = xr.where(
-        case_b == 1, cdd_share,
-        xr.where(case_b == 2, hdd_share,
-                 xr.where(case_b == 3, cdd_share, uniform))
+        case_b == 1,
+        cdd_share,
+        xr.where(case_b == 2, hdd_share, xr.where(case_b == 3, cdd_share, uniform)),
     )
     o_hat = xr.full_like(hdd_share, 1 / 12)
     weight = P_HEAT * h_hat + P_COOL * c_hat + P_OTHER * o_hat
@@ -141,7 +147,7 @@ for name, (hdd_thr, cdd_thr) in SCENARIOS.items():
 
 # %% write summary CSV
 df = pd.DataFrame(partition_rows)
-csv_out = OUT / "eq5-hdd-cdd-sensitivity-summary.csv"
+csv_out = OUT_PAPER / "eq5-hdd-cdd-sensitivity-summary.csv"
 df.to_csv(csv_out, index=False)
 print(f"Wrote {csv_out}")
 print(df.to_string(index=False))
@@ -151,7 +157,7 @@ prof_df = pd.DataFrame(
     {name: monthly_profile_per_scenario[name] for name in SCENARIOS},
     index=pd.Index(range(1, 13), name="month"),
 )
-prof_csv = OUT / "eq5-hdd-cdd-sensitivity-monthly-profile.csv"
+prof_csv = OUT_PAPER / "eq5-hdd-cdd-sensitivity-monthly-profile.csv"
 prof_df.to_csv(prof_csv)
 print(f"Wrote {prof_csv}")
 print(prof_df.round(4).to_string())
@@ -162,55 +168,72 @@ print("Max monthly weight difference vs default (percentage points):")
 default = monthly_profile_per_scenario["default"]
 for name in SCENARIOS:
     diff = (monthly_profile_per_scenario[name] - default) * 100
-    print(f"  {name:8s}  max abs: {np.max(np.abs(diff)):.3f}pp"
-          f"  range: [{diff.min():+.3f}, {diff.max():+.3f}]pp")
+    print(
+        f"  {name:8s}  max abs: {np.max(np.abs(diff)):.3f}pp"
+        f"  range: [{diff.min():+.3f}, {diff.max():+.3f}]pp"
+    )
 
 
 # %% plot
-fig, axes = plt.subplots(1, 2, figsize=(11, 4))
+# fig, axes = plt.subplots(1, 1, figsize=(11, 4))
 
 # (a) partition fractions stacked bar
-ax = axes[0]
-cases = ["case1_both_pct", "case2_heating_only_pct",
-         "case3_cooling_only_pct", "case4_uniform_pct"]
-labels = ["Case 1: both", "Case 2: heating only",
-          "Case 3: cooling only", "Case 4: uniform"]
-colors = ["#406084", "#a05a2c", "#5f8a3f", "#888888"]
-bottom = np.zeros(len(SCENARIOS))
-xs = list(SCENARIOS.keys())
-for c, lbl, col in zip(cases, labels, colors):
-    vals = df[c].to_numpy()
-    ax.bar(xs, vals, bottom=bottom, color=col, label=lbl, edgecolor="white")
-    bottom = bottom + vals
-ax.set_ylabel("CONUS cell-year fraction (%)")
-ax.set_xlabel("Threshold scenario")
-xs_with_thr = [
-    f"{name}\n(HDD={int(hdd)}, CDD={int(cdd)})"
-    for name, (hdd, cdd) in SCENARIOS.items()
-]
-ax.set_xticks(range(len(xs)))
-ax.set_xticklabels(xs_with_thr)
-ax.set_ylim(0, 100)
-ax.legend(loc="lower right", fontsize=8)
-ax.set_title("(a) Eq. 5 case partition")
+# ax = axes[0]
+# cases = [
+#     "case1_both_pct",
+#     "case2_heating_only_pct",
+#     "case3_cooling_only_pct",
+#     "case4_uniform_pct",
+# ]
+# labels = [
+#     "Case 1: both",
+#     "Case 2: heating only",
+#     "Case 3: cooling only",
+#     "Case 4: uniform",
+# ]
+# colors = ["#406084", "#a05a2c", "#5f8a3f", "#888888"]
+# bottom = np.zeros(len(SCENARIOS))
+# xs = list(SCENARIOS.keys())
+# for c, lbl, col in zip(cases, labels, colors):
+#     vals = df[c].to_numpy()
+#     ax.bar(xs, vals, bottom=bottom, color=col, label=lbl, edgecolor="white")
+#     bottom = bottom + vals
+# ax.set_ylabel("CONUS cell-year fraction (%)")
+# ax.set_xlabel("Threshold scenario")
+# xs_with_thr = [
+#     f"{name}\n(HDD={int(hdd)}, CDD={int(cdd)})"
+#     for name, (hdd, cdd) in SCENARIOS.items()
+# ]
+# ax.set_xticks(range(len(xs)))
+# ax.set_xticklabels(xs_with_thr)
+# ax.set_ylim(0, 100)
+# ax.legend(loc="lower right", fontsize=8)
+# ax.set_title("(a) Eq. 5 case partition")
 
 # (b) monthly weight profile
-ax = axes[1]
+# ax = axes[0]
 for name, color in zip(SCENARIOS, ["#a05a2c", "#406084", "#5f8a3f"]):
-    ax.plot(range(1, 13), monthly_profile_per_scenario[name],
-            "o-", color=color, label=f"{name} (HDD={int(SCENARIOS[name][0])},"
-                                     f" CDD={int(SCENARIOS[name][1])})")
-ax.set_xlabel("Month")
-ax.set_ylabel("CONUS-mean Electricity monthly weight")
-ax.set_xticks(range(1, 13))
-ax.legend(fontsize=8)
-ax.set_title("(b) Resulting monthly weight profile")
+    plt.plot(
+        range(1, 13),
+        monthly_profile_per_scenario[name],
+        "o-",
+        color=color,
+        label=f"{name} (HDD={int(SCENARIOS[name][0])}, CDD={int(SCENARIOS[name][1])})",
+    )
+plt.xlabel("Month")
+plt.ylabel("CONUS-mean Electricity monthly weight")
+plt.xticks(range(1, 13))
+plt.legend(fontsize=8)
+plt.title("(b) Resulting monthly weight profile")
 
-fig.suptitle(
-    "Eq. 5 HDD/CDD threshold sensitivity (CONUS, historical 2010--2019)",
+plt.suptitle(
+    "HDD/CDD threshold sensitivity",
     fontsize=11,
 )
-fig.tight_layout()
-fig_out = OUT / "eq5-hdd-cdd-sensitivity.png"
-fig.savefig(fig_out, dpi=200, bbox_inches="tight")
-print(f"Wrote {fig_out}")
+plt.tight_layout()
+fig_out1 = OUT_PAPER / "eq5-hdd-cdd-sensitivity.png"
+fig_out2 = OUT_LOCAL / "eq5-hdd-cdd-sensitivity.png"
+plt.savefig(fig_out1, dpi=200, bbox_inches="tight")
+plt.savefig(fig_out2, dpi=200, bbox_inches="tight")
+print(f"Wrote {fig_out1}")
+print(f"Wrote {fig_out2}")

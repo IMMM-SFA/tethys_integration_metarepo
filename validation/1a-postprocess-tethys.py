@@ -4,6 +4,9 @@ import geopandas as gpd
 import xagg as xa
 import pandas as pd
 import os
+import yaml
+
+P = yaml.safe_load(open("paths.yml"))
 
 # %%
 scenarios = [
@@ -17,8 +20,8 @@ scenarios = [
     "rcp85hotter_ssp5",
     "historical",
 ]
-path = "/Volumes/data/tethys/output/"
-output_path = "data"
+path = P["tethys_output_raw"] + "/"
+output_path = P["data_dir"]
 hucs_to_compute = [2, 4, 6, 8]
 demand_categories = [
     "Irrigation",
@@ -67,7 +70,7 @@ for scenario in scenarios:
                 if os.path.isfile(pix_area_fn):
                     continue
 
-                huc_shape = gpd.read_file(f"/Volumes/data/shapefiles/HUC{h}/HUC{h}.shp")
+                huc_shape = gpd.read_file(P[f"huc{h}_shapefile"])
                 # force the HUC to be a string to keep the leading zero
                 huc_shape["huc"] = huc_shape[f"huc{h}"].astype("|S").astype(str)
 

@@ -37,7 +37,7 @@ Example:
     # With custom files
     python adjust_runoff_shares_hist.py \
         --gcam-file gridded_runoff_shares_hist.nc \
-        --usgs-file usgs-runoff-share.nc \
+        --usgs-file usgs-runoff-share-2009-2020.nc \
         --huc2-shp huc2_shp/hybas_na_lev03_v1c.shp \
         --output adjust_runoff_shares_hist.nc
 
@@ -353,8 +353,10 @@ def main():
     parser = argparse.ArgumentParser(description='Adjust historical USGS runoff shares to match GCAM targets')
     parser.add_argument('--gcam-file', default='gridded_runoff_shares_hist.nc',
                        help='GCAM historical runoff shares file (default: gridded_runoff_shares_hist.nc)')
-    parser.add_argument('--usgs-file', default='usgs-runoff-share.nc',
-                       help='USGS runoff shares file (default: usgs-runoff-share.nc)')
+    parser.add_argument('--usgs-file', default='usgs-runoff-share-2009-2020.nc',
+                       help='USGS runoff shares file. Either the 3D annual file (lat, lon, Z1=year) '
+                            'produced by 2b-process-usgs-gwsw-split.R, or a pre-aggregated 2D mean '
+                            '(lat, lon). Default: usgs-runoff-share-2009-2020.nc')
     parser.add_argument('--huc2-shp', default='huc2_shp/hybas_na_lev03_v1c.shp',
                        help='HUC2 shapefile path (default: huc2_shp/hybas_na_lev03_v1c.shp)')
     parser.add_argument('--output', default='adjust_runoff_shares_hist.nc',
@@ -385,10 +387,19 @@ def main():
     ds_gcam = xr.open_dataset(args.gcam_file)
     ds_usgs = xr.open_dataset(args.usgs_file)
     
-    # extract data - note USGS has no time dimension
+    # extract data - GCAM is per-year, USGS is collapsed to a single 2D (lat, lon)
+    # mean. The R producer (2b-process-usgs-gwsw-split.R) writes a 3D file with a
+    # year dimension named Z1; older 2D files are also accepted as-is.
     gcam_share = ds_gcam["share"]  # keep all years
-    usgs_share = ds_usgs["usgs-runoff-share"].rename({"latitude": "lat", "longitude": "lon"})
-    
+    usgs_var = next(v for v in ds_usgs.data_vars if v.startswith("usgs-runoff-share"))
+    usgs_share = ds_usgs[usgs_var].rename({"latitude": "lat", "longitude": "lon"})
+
+    if "Z1" in usgs_share.dims:
+        years_in = ds_usgs["Z1"].values
+        print(f"USGS file has Z1 dim ({len(years_in)} layers); taking temporal mean.")
+        usgs_share = usgs_share.mean(dim="Z1", skipna=True)
+    usgs_share.name = "usgs-runoff-share"
+
     print(f"GCAM shape: {gcam_share.shape}")
     print(f"GCAM years: {list(gcam_share.year.values)}")
     print(f"USGS shape: {usgs_share.shape}")

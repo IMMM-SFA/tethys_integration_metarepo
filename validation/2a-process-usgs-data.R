@@ -9,7 +9,9 @@ options(
   dplyr.summarise.inform = FALSE
 )
 
-huc12_shape <- "/Volumes/data/shapefiles/HUC12/HUC12.shp" |>
+P = yaml::read_yaml("paths.yml")
+
+huc12_shape <- P$huc12_shapefile |>
   st_read(quiet = TRUE) |>
   rename(huc = huc12) |>
   mutate(huc2 = substr(huc, 1, 2)) |>
@@ -19,7 +21,7 @@ huc12_shape <- "/Volumes/data/shapefiles/HUC12/HUC12.shp" |>
 # units=MGD
 # pscuftot = public supply consumptive use fresh water total (surface + ground)
 usgs_public_supply_cu <-
-  "/Volumes/data/tethys/USGS-2025/pscutot_wu-public-supply-cu_CONUS_200901-202012_wide.csv" |>
+  P$usgs_public_supply_cu |>
   read_csv() |>
   mutate(datetime = ym(year_month)) |>
   select(-year_month) |>
@@ -31,7 +33,7 @@ usgs_public_supply_cu |>
 
 # units=MGD
 usgs_public_supply_wd <-
-  "/Volumes/data/tethys/USGS-2025/pswdtot_wu-public-supply-wd_CONUS_200001-202012_wide.csv" |>
+  P$usgs_public_supply_wd |>
   read_csv() |>
   mutate(datetime = ym(year_month)) |>
   select(-year_month) |>
@@ -44,7 +46,7 @@ usgs_public_supply_wd |>
 # units=MGD
 # irrcuftot = irrigation consumptive use fresh water total (surface + ground)
 usgs_irrigation_cu <-
-  "/Volumes/data/tethys/USGS-2025/irrcutot_wu-irrigation-cu_CONUS_200001-202012_wide.csv" |>
+  P$usgs_irrigation_cu |>
   read_csv() |>
   mutate(datetime = ym(year_month)) |>
   select(-year_month) |>
@@ -56,7 +58,7 @@ usgs_irrigation_cu |>
 
 # units=MGD
 usgs_irrigation_wd <-
-  "/Volumes/data/tethys/USGS-2025/irrwdtot_wu-irrigation-wd_CONUS_200001-202012_wide.csv" |>
+  P$usgs_irrigation_wd |>
   read_csv() |>
   mutate(datetime = ym(year_month)) |>
   select(-year_month) |>
@@ -69,7 +71,7 @@ usgs_irrigation_wd |>
 # units=MGD
 # tecuftot = thermoelectric consumptive use fresh water total (surface + ground)
 usgs_thermoelectric_cu <-
-  "/Volumes/data/tethys/USGS-2025/combined_wu-thermoelectric_CONUS_200801-202012_long.csv" |>
+  P$usgs_thermoelectric |>
   read_csv() |>
   mutate(datetime = ym(year_month), usgs_cu_mgd = tecuftot_mgd) |>
   select(datetime, huc12 = huc12_id, usgs_cu_mgd) |>
@@ -82,7 +84,7 @@ usgs_thermoelectric_cu |>
 # units=MGD
 # tecuftot = thermoelectric consumptive use fresh water total (surface + ground)
 usgs_thermoelectric_wd <-
-  "/Volumes/data/tethys/USGS-2025/combined_wu-thermoelectric_CONUS_200801-202012_long.csv" |>
+  P$usgs_thermoelectric |>
   read_csv() |>
   mutate(datetime = ym(year_month), usgs_wd_mgd = tewdftot_mgd + tewdssw_mgd) |>
   select(datetime, huc12 = huc12_id, usgs_wd_mgd) |>
