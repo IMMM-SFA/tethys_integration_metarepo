@@ -259,7 +259,7 @@ save_plot(
   height = 3
 )
 
-# Monthly total timeseries -------------------------------------------------
+# Monthly total boxplot -------------------------------------------------
 # %%
 p_monthly_total = demand_monthly |>
   pivot_longer(c(usgs_km3, tethys_km3)) |>

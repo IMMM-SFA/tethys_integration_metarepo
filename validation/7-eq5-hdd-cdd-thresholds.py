@@ -224,12 +224,12 @@ plt.xlabel("Month")
 plt.ylabel("CONUS-mean Electricity monthly weight")
 plt.xticks(range(1, 13))
 plt.legend(fontsize=8)
-plt.title("(b) Resulting monthly weight profile")
+plt.title("Monthly electricity water demand weight profile")
 
-plt.suptitle(
-    "HDD/CDD threshold sensitivity",
-    fontsize=11,
-)
+# plt.suptitle(
+#     "HDD/CDD threshold sensitivity",
+#     fontsize=11,
+# )
 plt.tight_layout()
 fig_out1 = OUT_PAPER / "eq5-hdd-cdd-sensitivity.png"
 fig_out2 = OUT_LOCAL / "eq5-hdd-cdd-sensitivity.png"

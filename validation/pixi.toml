@@ -11,9 +11,8 @@ process-usgs = "Rscript 2a-process-usgs-data.R"
 combine-usgs-tethys = "Rscript 3-combine-usgs-tethys.R"
 compare-huc = "Rscript 4a-compare-tethys-usgs.R"
 compare-huc12 = "Rscript 4b-compare-tethys-usgs-huc12.R"
-paper-figures = "Rscript 5-paper-figures.R"
-scenarios-timeseries = "Rscript 5c-scenarios-timeseries.R"
-dominant-sector-map = "python 5d-dominant-sector-map.py"
+demand-sector-by-grid-cell = "python 5a-demand-sector-by-grid-cell.py"
+paper-figures = "Rscript 5b-paper-figures.R"
 
 [dependencies]
 xarray = ">=2026.4.0,<2027"
