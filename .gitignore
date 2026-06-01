@@ -4,7 +4,7 @@
 # pyenv
 .python-version
 
-# data — tracked README only; everything else lives on MSD-Live
+# data -- tracked README only; everything else lives on MSD-Live
 data/*
 !data/README.md
 
@@ -25,7 +25,7 @@ validation/tethys-prev-version-compare.pdf
 # figures/ dir at repo root is a scratch output area
 figures/
 
-# large WRF forcing inputs — track externally (DVC / git-annex / /Volumes archive)
+# large WRF forcing inputs -- track externally (DVC / git-annex / /Volumes archive)
 scripts/0_preprocessing/gsi_nersc/inputs/wrf_variables_tethys_demand_2020.nc
 
 # Byte-compiled / optimized / DLL files

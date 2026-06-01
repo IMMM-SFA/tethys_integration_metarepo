@@ -1,27 +1,27 @@
-# Metarepo cleanup — inventory & classification
+# Metarepo cleanup -- inventory & classification
 
 Generated 2026-04-30 as part of the water-scarcity Tethys data paper v2 effort. This is a **proposal**, not a done deal. Nothing moves or gets deleted until the author (Cameron) signs off on each row and pings Hassan/Travis about the changes that affect the shared repo.
 
 ## Inventory & proposed classification
 
 Legend:
-- **KEEP** — stays where it is.
-- **MOVE → path** — relocated under the new numbered `scripts/` layout.
-- **DELETE** — remove from repo. Justification noted inline.
-- **GITIGNORE** — stays on disk but is excluded from git.
-- **PROMOTE** — lift up from a hidden/sub location into a more visible one.
+- **KEEP** -- stays where it is.
+- **MOVE → path** -- relocated under the new numbered `scripts/` layout.
+- **DELETE** -- remove from repo. Justification noted inline.
+- **GITIGNORE** -- stays on disk but is excluded from git.
+- **PROMOTE** -- lift up from a hidden/sub location into a more visible one.
 
 ### Top-level files
 
 | File | Proposal | Reason |
 |---|---|---|
 | `README.md` | **RENAME → `TASKS.md`** | Current README is a task-list and discussion log; keep that content under a name that reflects it. New `README.md` is the canonical entry point (proposal below). |
-| `requirements.txt` | KEEP | Pinning for Python deps — Tethys runs use this. |
+| `requirements.txt` | KEEP | Pinning for Python deps -- Tethys runs use this. |
 | `test_config.yml` | **MOVE → `scripts/3_config/test_config.yml`** | This is a canonical Tethys config, not a test; keep next to the run scripts and the new `paths.yml`. |
-| `run_tethys.ipynb` | **MOVE → `scripts/1_runs/run_tethys.ipynb`** | Belongs with the other run drivers in `im3_tethys_runs/`. Still uncommitted — include in snapshot commit before move. |
+| `run_tethys.ipynb` | **MOVE → `scripts/1_runs/run_tethys.ipynb`** | Belongs with the other run drivers in `im3_tethys_runs/`. Still uncommitted -- include in snapshot commit before move. |
 | `im3_power_plants_to_tethys.ipynb` | **MOVE → `scripts/0_preprocessing/im3_power_plants_to_tethys.ipynb`** | CERF-IM3 power-plant merge → Tethys input. Belongs in stage 0. Still uncommitted. |
 | `im3_tethys_historical_inputs.zip` | **GITIGNORE + DELETE from workdir once confirmed archived** | Large binary, currently untracked. Flagged in git status. Move to `/Volumes/data/tethys/` or `/rcfs/projects/im3/` if not already there, then remove. |
-| `.gitignore` | KEEP + append `validation/tethys-prev-version-compare.pdf`, `figures/`, `*.zip` if appropriate | Already covers `data/` (inc. `validation/data/` — verified via `git check-ignore`). Small tightening only. |
+| `.gitignore` | KEEP + append `validation/tethys-prev-version-compare.pdf`, `figures/`, `*.zip` if appropriate | Already covers `data/` (inc. `validation/data/` -- verified via `git check-ignore`). Small tightening only. |
 | `.DS_Store` | **DELETE** (one-off) + stays gitignored | macOS cruft, already gitignored. |
 
 ### `preprocessing_scripts_gsi_nersc/` (all untracked)
@@ -46,25 +46,25 @@ Authored by Hisham Eldardiry (elda639) on NERSC, 2022–2023. Referenced in pape
 | File | Caller(s) | Proposal | Reason |
 |---|---|---|---|
 | `scripts/compute_gsi.py` | `compute_gsi.sh` | **MOVE → `scripts/0_preprocessing/compute_gsi.py`** | Downstream of `TGW_PET_GSI_NERSC.py`; aggregates GSI to monthly. |
-| `scripts/compute_gsi.sh` | — | **MOVE → `scripts/0_preprocessing/`** | slurm-ish wrapper; update paths inside. |
+| `scripts/compute_gsi.sh` | -- | **MOVE → `scripts/0_preprocessing/`** | slurm-ish wrapper; update paths inside. |
 | `scripts/compute_deficit.py` | `compute_deficit.sh` | **MOVE → `scripts/0_preprocessing/`** | Computes monthly P−PET deficit. |
-| `scripts/compute_deficit.sh` | — | **MOVE → `scripts/0_preprocessing/`** | Wrapper. |
-| `scripts/compute_monthly_weights.py` | `run_scenario.py`, `run_scenario_decep.py`, `test_config.yml` | **MOVE → `scripts/0_preprocessing/`** | Produces `irrigation_weight_{scenario}.nc` from deficit × GSI. **Active — do not delete.** |
-| `scripts/cerf_to_tethys/cerf_to_tethys.py` | — (standalone) | **MOVE → `scripts/0_preprocessing/cerf_to_tethys/`** | Converts CERF output to Tethys electricity proxy. |
-| `scripts/population_to_tethys/*` | — (standalone) | **MOVE → `scripts/0_preprocessing/population_to_tethys/`** | SSP population downscaling to Tethys grid. Has its own README — preserve it. |
+| `scripts/compute_deficit.sh` | -- | **MOVE → `scripts/0_preprocessing/`** | Wrapper. |
+| `scripts/compute_monthly_weights.py` | `run_scenario.py`, `run_scenario_decep.py`, `test_config.yml` | **MOVE → `scripts/0_preprocessing/`** | Produces `irrigation_weight_{scenario}.nc` from deficit × GSI. **Active -- do not delete.** |
+| `scripts/cerf_to_tethys/cerf_to_tethys.py` | -- (standalone) | **MOVE → `scripts/0_preprocessing/cerf_to_tethys/`** | Converts CERF output to Tethys electricity proxy. |
+| `scripts/population_to_tethys/*` | -- (standalone) | **MOVE → `scripts/0_preprocessing/population_to_tethys/`** | SSP population downscaling to Tethys grid. Has its own README -- preserve it. |
 | `scripts/adjust_runoff_shares/adjust_runoff_shares_hist.py` | (review) | **MOVE → `scripts/2_postprocess/adjust_runoff_shares/`** | Adjusts GCAM runoff shares using USGS. Produces `gridded_runoff_shares.nc` that becomes part of the published dataset. |
-| `scripts/adjust_runoff_shares/adjust_runoff_shares_method2_kazi.py` | (review) | **MOVE → `scripts/2_postprocess/adjust_runoff_shares/`** | Alternative method — ask Kazi/Hassan if this is the canonical one (output path `output_adjusted_usgs_method2/` suggests yes). |
-| `scripts/adjust_runoff_shares/*.ipynb` | — | **MOVE → `scripts/2_postprocess/adjust_runoff_shares/notebooks/`** | Exploratory; keep separate from scripts. |
-| `scripts/adjust_runoff_shares/*.nc`, `*.png`, `*.zip` | — | **GITIGNORE** | Derived data; should not be in git. Double-check `gridded_runoff_shares_*.nc` — if these are reference inputs (not derived), keep and document. |
+| `scripts/adjust_runoff_shares/adjust_runoff_shares_method2_kazi.py` | (review) | **MOVE → `scripts/2_postprocess/adjust_runoff_shares/`** | Alternative method -- ask Kazi/Hassan if this is the canonical one (output path `output_adjusted_usgs_method2/` suggests yes). |
+| `scripts/adjust_runoff_shares/*.ipynb` | -- | **MOVE → `scripts/2_postprocess/adjust_runoff_shares/notebooks/`** | Exploratory; keep separate from scripts. |
+| `scripts/adjust_runoff_shares/*.nc`, `*.png`, `*.zip` | -- | **GITIGNORE** | Derived data; should not be in git. Double-check `gridded_runoff_shares_*.nc` -- if these are reference inputs (not derived), keep and document. |
 | `scripts/im3_tethys_runs/run_scenario.py` | (top-level entry) | **MOVE → `scripts/1_runs/im3_tethys_runs/`** | Local Tethys run driver for one scenario. |
 | `scripts/im3_tethys_runs/run_scenario_decep.py` | (top-level entry) | **MOVE → `scripts/1_runs/im3_tethys_runs/`** | Deception HPC variant. |
-| `scripts/im3_tethys_runs/tethys_run.sh` | — | **MOVE → `scripts/1_runs/im3_tethys_runs/`** | Shell wrapper. |
-| `scripts/im3_tethys_runs/im3_tethys_output.ipynb` | — | **MOVE → `scripts/1_runs/im3_tethys_runs/`** | Output inspection notebook. |
-| `scripts/analysis.py` | — (**no callers found**) | **DELETE** | One-off exploration for `year=2015, scenario='Historical'` with hardcoded PNNL-Pic paths. Superseded by the `validation/` pipeline. Git history: single commit (`58952ca`, ~stale). **Confirm with Cameron/Travis before delete.** |
-| `scripts/reaggregate.py` | — (**no callers found**) | **DELETE** | Spatial comparison of Tethys output vs input by region. Superseded by `validation/4a-compare-tethys-usgs.R`. Hardcoded Pic paths. **Confirm before delete.** |
+| `scripts/im3_tethys_runs/tethys_run.sh` | -- | **MOVE → `scripts/1_runs/im3_tethys_runs/`** | Shell wrapper. |
+| `scripts/im3_tethys_runs/im3_tethys_output.ipynb` | -- | **MOVE → `scripts/1_runs/im3_tethys_runs/`** | Output inspection notebook. |
+| `scripts/analysis.py` | -- (**no callers found**) | **DELETE** | One-off exploration for `year=2015, scenario='Historical'` with hardcoded PNNL-Pic paths. Superseded by the `validation/` pipeline. Git history: single commit (`58952ca`, ~stale). **Confirm with Cameron/Travis before delete.** |
+| `scripts/reaggregate.py` | -- (**no callers found**) | **DELETE** | Spatial comparison of Tethys output vs input by region. Superseded by `validation/4a-compare-tethys-usgs.R`. Hardcoded Pic paths. **Confirm before delete.** |
 | `scripts/counties.tif`, `scripts/county_names.csv` | Used only by the dead `analysis.py` (and stage-0 if kept elsewhere) | **DELETE if `analysis.py` goes; else MOVE → `scripts/3_config/reference_maps/`** | Small reference rasters. If regenerable from USGS shapefiles, delete; if not, keep and cite source. |
 | `scripts/usco2015v2.0.csv` | Referenced only by `analysis.py` | **DELETE** if `analysis.py` goes | USGS 2015 county-level water use. Supersedes `USGS_water_2010.csv`. Validation uses `validation/data/usco2015v2.0.csv` (separate copy). |
-| `scripts/USGS_water_2010.csv` | — (**no callers**) | **DELETE** | 2010 USGS data, superseded by 2015. |
+| `scripts/USGS_water_2010.csv` | -- (**no callers**) | **DELETE** | 2010 USGS data, superseded by 2015. |
 
 ### `validation/`
 
@@ -79,7 +79,7 @@ Authored by Hisham Eldardiry (elda639) on NERSC, 2022–2023. Referenced in pape
 
 ~600 CSV files, **none tracked in git** (confirmed via `git ls-files validation/data/ | wc -l == 0`). These are derived intermediates from the numbered pipeline. Keep them gitignored; make sure the pipeline can regenerate them end-to-end. No cleanup action needed on the repo side.
 
-**However:** these 600 files are on your laptop in the repo working tree. Consider moving the whole `validation/data/` directory to `/Volumes/data/tethys/validation_intermediates/` and symlinking back — frees local disk and keeps the logical location. Optional.
+**However:** these 600 files are on your laptop in the repo working tree. Consider moving the whole `validation/data/` directory to `/Volumes/data/tethys/validation_intermediates/` and symlinking back -- frees local disk and keeps the logical location. Optional.
 
 ### `data/`, `output/`, `figures/`
 
@@ -89,9 +89,9 @@ All three are under `data/`-style gitignore. Not tracked. Leave alone.
 
 | Action | File count | Risk |
 |---|---|---|
-| Move (preserve history with `git mv`) | ~25 files | Low — imports/invocations update mechanically |
+| Move (preserve history with `git mv`) | ~25 files | Low -- imports/invocations update mechanically |
 | Rename | 2 (`README.md` → `TASKS.md`; `1b-*` → `1c-*`) | Low |
-| Delete | 4–5 scripts + 1–2 reference CSVs (pending author confirmation) | Medium — need Hassan/Travis sign-off if any cross-team dependency |
+| Delete | 4–5 scripts + 1–2 reference CSVs (pending author confirmation) | Medium -- need Hassan/Travis sign-off if any cross-team dependency |
 | Git-ignore new patterns | ~3 (`*.zip`, `validation/tethys-prev-version-compare.pdf`, etc.) | Low |
 | Add new files | 5 (`README.md` replacement, `PIPELINE.md`, `scripts/3_config/paths.yml`, `docs/CLEANUP.md` (this file), `docs/PIPELINE_CHECKLIST.md`) | None |
 
@@ -99,7 +99,7 @@ All three are under `data/`-style gitignore. Not tracked. Leave alone.
 
 ```
 tethys_integration_metarepo/
-├── README.md                         # rewritten — one-paragraph overview + pointer to PIPELINE.md
+├── README.md                         # rewritten -- one-paragraph overview + pointer to PIPELINE.md
 ├── TASKS.md                          # old README content moved here
 ├── PIPELINE.md                       # end-to-end run docs, stage 0 → 3
 ├── requirements.txt

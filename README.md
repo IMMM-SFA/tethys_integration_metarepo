@@ -5,7 +5,7 @@ Meta-repository for the code, inputs, and validation that produce the IM3 Experi
 This README is the canonical entry point and bundles four sections:
 
 1. [Repository layout](#repository-layout)
-2. [Pipeline](#pipeline) — end-to-end run instructions, stage 0 → 3 plus validation
+2. [Pipeline](#pipeline) -- end-to-end run instructions, stage 0 → 3 plus validation
 3. [Reproducing the figures and tables of the data paper](#reproducing-the-figures-and-tables-of-the-data-paper)
 4. [Tasks and open discussion](#tasks-and-open-discussion)
 
@@ -60,7 +60,7 @@ tethys_integration_metarepo/
     └── README.md                             # pixi tasks + stage detail
 ```
 
-Two pixi environments live here: the top-level (`pixi.toml`, Python 3.12, `msdlive-cli`, `awscli` for dataset publishing) and `validation/pixi.toml` (R 4.4+, xarray, geopandas, xagg, tidyverse, sf — covers every numbered validation stage).
+Two pixi environments live here: the top-level (`pixi.toml`, Python 3.12, `msdlive-cli`, `awscli` for dataset publishing) and `validation/pixi.toml` (R 4.4+, xarray, geopandas, xagg, tidyverse, sf -- covers every numbered validation stage).
 
 `paper/` is a git submodule pointing to `git@github.com:cameronbracken/TETHYS-data-paper.git`. Run `git submodule update --init` after a fresh clone.
 
@@ -68,15 +68,15 @@ Two pixi environments live here: the top-level (`pixi.toml`, Python 3.12, `msdli
 
 ## Related repos
 
-- [JGCRI/tethys](https://github.com/JGCRI/tethys) — upstream Tethys package (`pip install tethys-downscale`).
-- [IMMM-SFA/mosartwmpy](https://github.com/IMMM-SFA/mosartwmpy) — river routing and water management, downstream of Tethys.
-- [IMMM-SFA/demeter](https://github.com/IMMM-SFA/demeter) — land-use downscaling that supplies irrigation proxies.
-- [IMMM-SFA/cerf](https://github.com/IMMM-SFA/cerf) — power-plant siting that supplies electricity proxies.
+- [JGCRI/tethys](https://github.com/JGCRI/tethys) -- upstream Tethys package (`pip install tethys-downscale`).
+- [IMMM-SFA/mosartwmpy](https://github.com/IMMM-SFA/mosartwmpy) -- river routing and water management, downstream of Tethys.
+- [IMMM-SFA/demeter](https://github.com/IMMM-SFA/demeter) -- land-use downscaling that supplies irrigation proxies.
+- [IMMM-SFA/cerf](https://github.com/IMMM-SFA/cerf) -- power-plant siting that supplies electricity proxies.
 
 ## Scenarios
 
 - `historical` (1980–2019)
-- `rcp{45,85}{cooler,hotter}_ssp{3,5}` — 8 future scenarios, 2020–2099
+- `rcp{45,85}{cooler,hotter}_ssp{3,5}` -- 8 future scenarios, 2020–2099
 
 CONUS bounding box: `[25.0625, 52.9375, -124.9375, -67.0625]` at 1/8° (0.125°).
 
@@ -88,10 +88,10 @@ End-to-end instructions for producing the IM3 Experiment Group C Tethys water-de
 
 The pipeline is organised into four numbered stages:
 
-- **0. Preprocessing** — turn raw inputs into the proxies, weights, and plant locations that Tethys consumes.
-- **1. Runs** — run Tethys for the historical scenario and the 8 future scenarios.
-- **2. Postprocess** — adjust GCAM basin-level renewable vs non-renewable source shares against USGS and split the gridded output by source.
-- **3. Config** — shared configuration artifacts (Tethys YAML, reference data, and `paths.yml` for environment-specific paths).
+- **0. Preprocessing** -- turn raw inputs into the proxies, weights, and plant locations that Tethys consumes.
+- **1. Runs** -- run Tethys for the historical scenario and the 8 future scenarios.
+- **2. Postprocess** -- adjust GCAM basin-level renewable vs non-renewable source shares against USGS and split the gridded output by source.
+- **3. Config** -- shared configuration artifacts (Tethys YAML, reference data, and `paths.yml` for environment-specific paths).
 
 Validation scripts (Tethys vs USGS comparison) live in a sibling `validation/` tree and are run after stage 2.
 
@@ -115,11 +115,11 @@ pip install -r requirements.txt
 pip install tethys-downscale  # or `pip install -e ../tethys-code` from source
 ```
 
-Stage 0 and validation steps need the data volume mounted (local) or HPC-side access to `/pic/projects/im3/` or `/rcfs/projects/im3/`. Tethys input files (livestock, maps, GCAM database, climate, LULC, power plants, population) are published on MSD-Live — see `data/README.md`.
+Stage 0 and validation steps need the data volume mounted (local) or HPC-side access to `/pic/projects/im3/` or `/rcfs/projects/im3/`. Tethys input files (livestock, maps, GCAM database, climate, LULC, power plants, population) are published on MSD-Live -- see `data/README.md`.
 
 R ≥ 4.5 for the validation scripts, with `tidyverse`, `sf`, `ncdf4`, `scico`, `ggthemes`.
 
-## Stage 0 — Preprocessing
+## Stage 0 -- Preprocessing
 
 All scripts live under `scripts/0_preprocessing/`.
 
@@ -127,11 +127,11 @@ All scripts live under `scripts/0_preprocessing/`.
 
 `scripts/0_preprocessing/gsi_nersc/` bundles the scripts that take TGW-WRF climate forcing and produce per-cell monthly inputs for both irrigation temporal downscaling and electricity HDD/CDD:
 
-1. `TGW_PET_GSI_NERSC.py` — daily potential evapotranspiration and growing-season index (GSI) from hourly TGW-WRF.
-2. `Monthly_Deficit_NERSC.py` — monthly P − PET deficit.
-3. `Tavg_HDD_CDD.py` — mean temperature and heating/cooling degree days.
-4. `daylength.py` — helper for solar declination and daylength used in GSI.
-5. `Tethys_Irrigation_Demand_WRF_{Historical,Future}_Forcing_CONUS.py` — scenario-specific drivers that knit these together into the per-cell irrigation demand weights that Tethys reads as `pirrww`.
+1. `TGW_PET_GSI_NERSC.py` -- daily potential evapotranspiration and growing-season index (GSI) from hourly TGW-WRF.
+2. `Monthly_Deficit_NERSC.py` -- monthly P − PET deficit.
+3. `Tavg_HDD_CDD.py` -- mean temperature and heating/cooling degree days.
+4. `daylength.py` -- helper for solar declination and daylength used in GSI.
+5. `Tethys_Irrigation_Demand_WRF_{Historical,Future}_Forcing_CONUS.py` -- scenario-specific drivers that knit these together into the per-cell irrigation demand weights that Tethys reads as `pirrww`.
 
 These scripts run on NERSC against `/global/cfs/projectdirs/m2702/`; outputs are copied into the metarepo flow via `scripts/0_preprocessing/{compute_gsi,compute_deficit,compute_monthly_weights}.py`.
 
@@ -148,16 +148,16 @@ The output is one `irrigation_weight_{scenario}.nc` per scenario, which Tethys's
 
 ### Proxies
 
-- **Population (SSP-consistent)** — `scripts/0_preprocessing/population_to_tethys/`. See its `README.md` for the decadal→annual-by-state fit that Chris maintains.
-- **CERF power plants** — `scripts/0_preprocessing/cerf_to_tethys/cerf_to_tethys.py` turns CERF siting output into Tethys electricity proxies at 1/8° resolution, per technology.
-- **Historical global + IM3 CONUS plants** — `scripts/0_preprocessing/im3_power_plants_to_tethys.ipynb` merges GPPD v1.3 (global) with the IM3 CONUS inventory to build the historical `*_gppd_im3_tethys_plants.nc`.
+- **Population (SSP-consistent)** -- `scripts/0_preprocessing/population_to_tethys/`. See its `README.md` for the decadal→annual-by-state fit that Chris maintains.
+- **CERF power plants** -- `scripts/0_preprocessing/cerf_to_tethys/cerf_to_tethys.py` turns CERF siting output into Tethys electricity proxies at 1/8° resolution, per technology.
+- **Historical global + IM3 CONUS plants** -- `scripts/0_preprocessing/im3_power_plants_to_tethys.ipynb` merges GPPD v1.3 (global) with the IM3 CONUS inventory to build the historical `*_gppd_im3_tethys_plants.nc`.
 
 ### Livestock, LULC
 
-- **Livestock** (Huang et al. 2018) — used as-is for spatial distribution. Not temporally downscaled.
-- **LULC (Demeter)** — `data/demeter/...` supplies per-crop irrigated-area maps referenced by `test_config.yml` and `run_scenario.py`.
+- **Livestock** (Huang et al. 2018) -- used as-is for spatial distribution. Not temporally downscaled.
+- **LULC (Demeter)** -- `data/demeter/...` supplies per-crop irrigated-area maps referenced by `test_config.yml` and `run_scenario.py`.
 
-## Stage 1 — Runs
+## Stage 1 -- Runs
 
 Local (one scenario):
 
@@ -182,9 +182,9 @@ Notebook-driven run (for development / iteration):
 jupyter lab scripts/1_runs/run_tethys.ipynb
 ```
 
-All run drivers consume `scripts/3_config/test_config.yml` as the canonical Tethys configuration, with scenario-specific overrides built in-script. `test_config.yml` uses relative paths that assume `CWD = repo root` — run from the repo root, or `cd` to it inside any wrapper.
+All run drivers consume `scripts/3_config/test_config.yml` as the canonical Tethys configuration, with scenario-specific overrides built in-script. `test_config.yml` uses relative paths that assume `CWD = repo root` -- run from the repo root, or `cd` to it inside any wrapper.
 
-## Stage 2 — Postprocess: runoff-share adjustment
+## Stage 2 -- Postprocess: runoff-share adjustment
 
 GCAM-USA reports per-basin renewable vs non-renewable withdrawals for aggregate demand but does not split by sector. We therefore adjust the basin-level shares against USGS observations and apply them to each sector (except electricity, which we constrain to surface water only).
 
@@ -194,7 +194,7 @@ Canonical script (matches output path naming `/Volumes/data/tethys/output_adjust
 python scripts/2_postprocess/adjust_runoff_shares/adjust_runoff_shares_method2_kazi.py
 ```
 
-The historical-only variant (`adjust_runoff_shares_hist.py`) is kept for comparison. It consumes `usgs-runoff-share-2009-2020.nc` (3D — `lat × lon × Z1=year`) and takes the temporal mean internally; the file is built by:
+The historical-only variant (`adjust_runoff_shares_hist.py`) is kept for comparison. It consumes `usgs-runoff-share-2009-2020.nc` (3D -- `lat × lon × Z1=year`) and takes the temporal mean internally; the file is built by:
 
 ```bash
 cd scripts/2_postprocess/adjust_runoff_shares
@@ -206,14 +206,14 @@ The companion notebooks in `scripts/2_postprocess/adjust_runoff_shares/notebooks
 
 Output: `gridded_runoff_shares.nc` per scenario, shipped alongside the per-sector demand files in the published MSD-Live dataset.
 
-## Stage 3 — Config
+## Stage 3 -- Config
 
 `scripts/3_config/` holds the Tethys YAML config, environment path registry, and reference data that is loaded by multiple scripts:
 
-- `test_config.yml` — canonical Tethys config; contains relative paths that assume CWD = repo root at run time.
-- `paths.yml` — environment-keyed base paths (NERSC / PIC / RCFS / local). Adopted going forward as the source of truth; legacy scripts still hard-code paths.
-- `reference_data/counties.tif`, `county_names.csv` — CONUS county map, used for county-level diagnostic aggregation.
-- `reference_data/usco2015v2.0.csv` — USGS 2015 county water-use data (also mirrored under `validation/data/`).
+- `test_config.yml` -- canonical Tethys config; contains relative paths that assume CWD = repo root at run time.
+- `paths.yml` -- environment-keyed base paths (NERSC / PIC / RCFS / local). Adopted going forward as the source of truth; legacy scripts still hard-code paths.
+- `reference_data/counties.tif`, `county_names.csv` -- CONUS county map, used for county-level diagnostic aggregation.
+- `reference_data/usco2015v2.0.csv` -- USGS 2015 county water-use data (also mirrored under `validation/data/`).
 
 ## Validation
 
@@ -235,10 +235,10 @@ Validation scripts need `/Volumes/data/tethys/` (local) or equivalent mounted. S
 
 The published dataset on MSD-Live contains, per scenario:
 
-- `{sector}_{withdrawals,consumption}.nc` — annual data.
-- `{sector}_{withdrawals,consumption}_monthly.nc` — monthly.
-- `gridded_runoff_shares.nc` — per-cell GW/SW split.
-- `config_{withdrawals,consumption}.yaml` — exact Tethys run config, for reproducibility.
+- `{sector}_{withdrawals,consumption}.nc` -- annual data.
+- `{sector}_{withdrawals,consumption}_monthly.nc` -- monthly.
+- `gridded_runoff_shares.nc` -- per-cell GW/SW split.
+- `config_{withdrawals,consumption}.yaml` -- exact Tethys run config, for reproducibility.
 
 Sectors: Domestic, Electricity, Irrigation, Livestock, Manufacturing, Mining.
 
@@ -304,7 +304,7 @@ The R formatter `air` (line-width 100, declared in `air.toml`) is configured for
 
 ## Figure-by-figure reproduction
 
-### Figure 1 — Dominant water-use sector across CONUS
+### Figure 1 -- Dominant water-use sector across CONUS
 
 **Output file:** `paper/usage1-dominant-sector-tethys-grid.png`
 **Script:** `validation/5d-dominant-sector-map.py`
@@ -318,7 +318,7 @@ The script reads the per-sector `*_consumption.nc` files from `historical/`, tak
 
 The previous version of the figure is preserved at `paper/usage1-dominant-sector-tethys-grid_v3rollback.png`.
 
-### Figure 2 — Workflow schematic
+### Figure 2 -- Workflow schematic
 
 **Source:** `paper/flow-chart.tex` (standalone TikZ).
 **Output:** `paper/flow-chart.pdf`, included by `main_v4.tex` via `\includegraphics[width=\textwidth]{flow-chart.pdf}`.
@@ -330,7 +330,7 @@ pdflatex flow-chart.tex
 
 The standalone class crops the PDF to the figure's bounding box, so the include scales cleanly to text width. Edit colors/positions in `flow-chart.tex` and recompile; no rebuild of the main manuscript is needed if only the figure changed (Overleaf will pick up the new PDF). The legacy bitmap source `flow-chart2.pdf` remains in the project directory in case of rollback but is no longer referenced from `main_v4.tex`.
 
-### Figures 3–7 — Validation against USGS at HUC6
+### Figures 3–7 -- Validation against USGS at HUC6
 
 **Output files:**
 
@@ -362,7 +362,7 @@ Rscript 4a-compare-tethys-usgs.R
 
 `4a-compare-tethys-usgs.R` writes the val1–val5 PNGs into the `paper/` submodule. The script applies a 1.12× scaling to USGS Domestic to align with the public-supply-only definition introduced after 2015.
 
-### Figure 8 — Inter-scenario consistency (CONUS annual demand)
+### Figure 8 -- Inter-scenario consistency (CONUS annual demand)
 
 **Output file:** `paper/val6-scenarios-annual-conus-timeseries.png`
 **Script:** `validation/5c-scenarios-timeseries.R`
@@ -374,7 +374,7 @@ Rscript 5c-scenarios-timeseries.R
 
 The script reads `<scenario>/<Sector>_withdrawals.nc` for each of the nine scenarios, sums to CONUS-annual totals, and plots one line per scenario per sector. The historical line runs through 2019; each future scenario is joined to the historical line at 2019 so the visual hand-off is continuous. The previous version is preserved as `val6-scenarios-annual-conus-timeseries_v3rollback.png`.
 
-### Figure 9 — Eq. 5 HDD/CDD threshold sensitivity
+### Figure 9 -- Eq. 5 HDD/CDD threshold sensitivity
 
 **Output files:**
 
@@ -393,7 +393,7 @@ The script reads `Tavg_HDD_CDD_Historical_2010_2019.nc` from `/Volumes/data/m5-b
 
 ## Table-by-table reproduction
 
-### Table 2 — Validation metrics for withdrawals at HUC6
+### Table 2 -- Validation metrics for withdrawals at HUC6
 
 **Output file:** `paper/figures/validation-metrics.csv`
 **Script:** `validation/compute-table2-metrics.py`
