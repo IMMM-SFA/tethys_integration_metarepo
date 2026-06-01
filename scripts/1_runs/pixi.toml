@@ -1,0 +1,33 @@
+[workspace]
+authors = ["Cam Bracken <cameron.bracken@pnnl.gov>"]
+channels = ["conda-forge"]
+name = "1_runs"
+platforms = ["osx-arm64"]
+version = "0.1.0"
+
+[tasks]
+# tethys-downscaling and its transitive dep gcamreader have broken/conflicting
+# pypi metadata, so pixi can't resolve them. Run this once after `pixi install`.
+install-tethys = "pip install --no-deps -e ../../../tethys-code && pip install --no-deps git+https://github.com/JGCRI/gcamreader.git"
+
+[dependencies]
+python = ">=3.11,<3.13"
+numpy = ">=2.4.6,<3"
+pandas = "*"
+pyyaml = "*"
+xarray = "*"
+rioxarray = "*"
+netcdf4 = "*"
+geopandas = "*"
+pyproj = "*"
+matplotlib = "*"
+dask = "*"
+dask-geopandas = "*"
+bokeh = "*"
+hvplot = "*"
+tqdm = "*"
+requests = "*"
+lxml = "*"
+click = "*"
+setuptools = "<81"
+pip = "*"

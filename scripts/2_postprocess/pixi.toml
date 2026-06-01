@@ -1,0 +1,16 @@
+[workspace]
+authors = ["Cam Bracken <cameron.bracken@pnnl.gov>"]
+channels = ["conda-forge"]
+name = "2_postprocess"
+platforms = ["osx-arm64"]
+version = "0.1.0"
+
+[tasks]
+
+[dependencies]
+xarray = ">=2026.4.0,<2027"
+numpy = ">=2.4.6,<3"
+geopandas = ">=1.1.3,<2"
+rasterio = ">=1.5.0,<2"
+matplotlib = ">=3.10.9,<4"
+netcdf4 = ">=1.7.4,<2"

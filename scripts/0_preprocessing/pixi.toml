@@ -1,0 +1,27 @@
+[workspace]
+authors = ["Cam Bracken <cameron.bracken@pnnl.gov>"]
+channels = ["conda-forge"]
+name = "0_preprocessing"
+platforms = ["osx-arm64"]
+version = "0.1.0"
+
+[tasks]
+
+[dependencies]
+xarray = ">=2026.4.0,<2027"
+pandas = ">=3.0.3,<4"
+numpy = ">=2.4.6,<3"
+rioxarray = ">=0.22.0,<0.23"
+geopandas = ">=1.1.3,<2"
+pyproj = ">=3.7.2,<4"
+cartopy = ">=0.25.0,<0.26"
+rasterio = ">=1.5.0,<2"
+statsmodels = ">=0.14.6,<0.15"
+geopy = ">=2.4.1,<3"
+salem = ">=0.3.11,<0.4"
+pyet = ">=1.4.0,<2"
+h3 = ">=4.4.1,<5"
+matplotlib = ">=3.10.9,<4"
+
+[pypi-dependencies]
+eto = "*"
