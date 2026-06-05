@@ -1,23 +1,12 @@
 # IM3 Tethys CONUS multi-sector water-demand dataset
 
-A gridded (1/8°), monthly, multi-sector water-demand dataset for the contiguous United States covering 1980–2100, downscaled with [Tethys](https://github.com/JGCRI/tethys) from a GCAM-USA scenario ensemble. The dataset is the input forcing for downstream river-routing and water-management runs with [mosartwmpy](https://github.com/IMMM-SFA/mosartwmpy), and is described in the accompanying data descriptor (Bracken et al., in prep).
+A gridded (1/8°), monthly, multi-sector water-demand dataset for the contiguous United States covering 1980–2100, downscaled with [Tethys](https://github.com/JGCRI/tethys) from 8 GCAM-USA scenarios. Code, configuration, and validation scripts that produce these files live in the [`tethys_integration_metarepo`](https://github.com/IMMM-SFA/tethys_integration_metarepo) repository. If you use this dataset in your work, please site it and the acompanying paper, see the [Citation](#citation) section below. 
 
-Code, configuration, and validation scripts that produce these files live in the [`tethys_integration_metarepo`](https://github.com/IMMM-SFA/tethys_integration_metarepo) repository. See `CITATION.cff` for citation metadata.
 
-## Contributors
 
-| Author | ORCID | Affiliation | Role (CRediT + project) |
-|---|---|---|---|
-| Cameron Bracken (corresponding) | [0000-0003-1917-402X](https://orcid.org/0000-0003-1917-402X) | Pacific Northwest National Laboratory, Richland, WA, USA | Project administration, Validation, Visualization, Writing – original draft. Coordinated the downscaling runs, conducted the HUC-scale validation, drafted the current manuscript. |
-| Hassan Niazi (corresponding) | [0000-0001-6556-2854](https://orcid.org/0000-0001-6556-2854) | Joint Global Change Research Institute, Pacific Northwest National Laboratory, College Park, MD, USA | Software, Methodology, Investigation. Developed and maintained the Tethys model, conducted runs, helped interpret GCAM-USA and Tethys outputs. |
-| Travis Thurber | [0000-0002-4370-9971](https://orcid.org/0000-0002-4370-9971) | Pacific Northwest National Laboratory, Richland, WA, USA | Software, Investigation. Extended Tethys to consume GCAM-USA inputs, built the first version of the Tethys metarepo, carried out the initial scenario runs. |
-| Isaac Thompson | [0000-0001-9594-0043](https://orcid.org/0000-0001-9594-0043) | Joint Global Change Research Institute, Pacific Northwest National Laboratory, College Park, MD, USA | Writing – original draft, Methodology, Software. Wrote the initial draft of the manuscript and contributed to the CERF–Tethys integration and power-plant proxy construction. |
-| Kazi Tamaddun | [0000-0001-6704-3767](https://orcid.org/0000-0001-6704-3767) | Pacific Northwest National Laboratory, Richland, WA, USA | Methodology, Investigation. Developed the USGS-anchored source-share attribution applied as a Tethys postprocess and conducted runs. |
-| Hisham Eldardiry | [0000-0002-2932-7459](https://orcid.org/0000-0002-2932-7459) | University of Washington, Seattle, WA, USA | Methodology, Data curation. Produced the TGW-WRF preprocessing pipeline for PET, HDD/CDD, and GSI. |
-| Kendall Mongird | [0000-0003-2807-7088](https://orcid.org/0000-0003-2807-7088) | Pacific Northwest National Laboratory, Richland, WA, USA | Methodology, Software. Developed the CERF–Tethys integration and power-plant proxy construction. |
-| Nathalie Voisin | [0000-0002-6848-449X](https://orcid.org/0000-0002-6848-449X) | Pacific Northwest National Laboratory, Richland, WA, USA; University of Washington, Seattle, WA, USA | Conceptualization, Supervision, Writing – review & editing. Contributed to scenario design and interpretation. |
-| Ning Sun | [0000-0002-4094-4482](https://orcid.org/0000-0002-4094-4482) | Pacific Northwest National Laboratory, Richland, WA, USA | Project administration, Conceptualization. Project management, scenario design, and interpretation. |
-| Jennie Rice | [0000-0002-7833-9456](https://orcid.org/0000-0002-7833-9456) | Pacific Northwest National Laboratory, Richland, WA, USA | Supervision, Funding acquisition, Writing – review & editing. Provided overall project guidance and scientific review. |
+![Dominant sector map](usage1-dominant-sector-tethys-grid.png)
+The figure above shows the dominant water-use sector at each 1/8$^{\circ}$ cell across CONUS, by annual-average consumption in the historical Tethys output (1980--2019). Spatial patterns reflect the multi-sector and heterogeneous nature of U.S. water demand, such as irrigation across the Great Plains, Mountain West, and Central Valley; thermoelectric concentrated near major generation centers in the Southeast and along the major navigable rivers; domestic demand surrounding metropolitan areas; livestock, manufacturing, and mining adding regional structure. These patterns underscore the need for high-resolution, multi-sector datasets that prior global products could not capture.
+
 
 ## Directory layout
 
@@ -33,7 +22,8 @@ tethys-dataset-msdlive/
 ├── rcp85cooler_ssp3/
 ├── rcp85cooler_ssp5/
 ├── rcp85hotter_ssp3/
-└── rcp85hotter_ssp5/
+├── rcp85hotter_ssp3/
+└── usage1-dominant-sector-tethys-grid.png
 ```
 
 The eight `rcp{45,85}{cooler,hotter}_ssp{3,5}` directories are the future scenario combinations of (radiative forcing × climate-model warming bin × shared socioeconomic pathway). All scenario directories share the same file structure described below.
@@ -158,9 +148,30 @@ CC BY 4.0.
 
 ## Citing
 
-See `CITATION.cff`. To cite the data descriptor and dataset together:
+Dataset:
 
-> Bracken, C., Niazi, H., Thurber, T., Thompson, I., Tamaddun, K., Eldardiry, H., Mongird, K., Voisin, N., Sun, N., Rice, J. (in prep). A multi-sector water-demand dataset for CONUS at 1/8° resolution, 1980–2100. *Scientific Data*. Dataset: MSD-Live.
+> Bracken, C., Niazi, H., Thurber, T., Thompson, I., Tamaddun, K., Eldardiry, H., Mongird, K., Voisin, N., Sun, N., Rice, J. (in prep). Tethys Water Demand Data, 1980–2100. 10.57931/3366643. Dataset: MSD-Live.
+
+Paper:
+
+> Bracken, C., Niazi, H., Thurber, T., Thompson, I., Tamaddun, K., Eldardiry, H., Mongird, K., Voisin, N., Sun, N., Rice, J. (in prep). Tethys Water Demand Data, 1980–2100. 10.57931/3366643. Scientific Data (in review).
+
+> See also `CITATION.cff`.
+
+## Contributors
+
+| Author | ORCID | Affiliation | Role (CRediT + project) |
+|---|---|---|---|
+| Cameron Bracken (corresponding) | [0000-0003-1917-402X](https://orcid.org/0000-0003-1917-402X) | Pacific Northwest National Laboratory, Richland, WA, USA | Project administration, Validation, Visualization, Writing – original draft. Coordinated the downscaling runs, conducted the HUC-scale validation, drafted the current manuscript. |
+| Hassan Niazi (corresponding) | [0000-0001-6556-2854](https://orcid.org/0000-0001-6556-2854) | Joint Global Change Research Institute, Pacific Northwest National Laboratory, College Park, MD, USA | Software, Methodology, Investigation. Developed and maintained the Tethys model, conducted runs, helped interpret GCAM-USA and Tethys outputs. |
+| Travis Thurber | [0000-0002-4370-9971](https://orcid.org/0000-0002-4370-9971) | Pacific Northwest National Laboratory, Richland, WA, USA | Software, Investigation. Extended Tethys to consume GCAM-USA inputs, built the first version of the Tethys metarepo, carried out the initial scenario runs. |
+| Isaac Thompson | [0000-0001-9594-0043](https://orcid.org/0000-0001-9594-0043) | Joint Global Change Research Institute, Pacific Northwest National Laboratory, College Park, MD, USA | Writing – original draft, Methodology, Software. Wrote the initial draft of the manuscript and contributed to the CERF–Tethys integration and power-plant proxy construction. |
+| Kazi Tamaddun | [0000-0001-6704-3767](https://orcid.org/0000-0001-6704-3767) | Pacific Northwest National Laboratory, Richland, WA, USA | Methodology, Investigation. Developed the USGS-anchored source-share attribution applied as a Tethys postprocess and conducted runs. |
+| Hisham Eldardiry | [0000-0002-2932-7459](https://orcid.org/0000-0002-2932-7459) | University of Washington, Seattle, WA, USA | Methodology, Data curation. Produced the TGW-WRF preprocessing pipeline for PET, HDD/CDD, and GSI. |
+| Kendall Mongird | [0000-0003-2807-7088](https://orcid.org/0000-0003-2807-7088) | Pacific Northwest National Laboratory, Richland, WA, USA | Methodology, Software. Developed the CERF–Tethys integration and power-plant proxy construction. |
+| Nathalie Voisin | [0000-0002-6848-449X](https://orcid.org/0000-0002-6848-449X) | Pacific Northwest National Laboratory, Richland, WA, USA; University of Washington, Seattle, WA, USA | Conceptualization, Supervision, Writing – review & editing. Contributed to scenario design and interpretation. |
+| Ning Sun | [0000-0002-4094-4482](https://orcid.org/0000-0002-4094-4482) | Pacific Northwest National Laboratory, Richland, WA, USA | Project administration, Conceptualization. Project management, scenario design, and interpretation. |
+| Jennie Rice | [0000-0002-7833-9456](https://orcid.org/0000-0002-7833-9456) | Pacific Northwest National Laboratory, Richland, WA, USA | Supervision, Funding acquisition, Writing – review & editing. Provided overall project guidance and scientific review. |
 
 ## Acknowledgements
 

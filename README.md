@@ -11,6 +11,12 @@ This README is the canonical entry point and bundles four sections:
 
 The `paper/` submodule (Overleaf manuscript) is updated separately. See `validation/README.md` for the pixi-driven validation pipeline; see `data/README.md` for input-data provenance and the MSD-Live dataset.
 
+# Data and code
+
+- Water demands dataset: [![DOI](https://data.msdlive.org/badge/DOI/10.57931/3366643.svg)](https://doi.org/10.57931/3366643)
+- Input data for running the workflow: [![DOI](https://data.msdlive.org/badge/DOI/10.57931/3366010.svg)](https://doi.org/10.57931/3366010)
+- Code archive: [![DOI](https://zenodo.org/badge/800116142.svg)](https://doi.org/10.5281/zenodo.20518118)
+
 ## Repository layout
 
 ```

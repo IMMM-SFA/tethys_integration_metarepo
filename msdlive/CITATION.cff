@@ -1,9 +1,10 @@
 cff-version: 1.2.0
 message: "If you use this dataset in your work, please cite it as below."
 title: "IM3 Tethys CONUS multi-sector water-demand dataset (1/8 degree, monthly, 1980-2100)"
-abstract: "A gridded (1/8 degree), monthly, multi-sector water-demand dataset for the contiguous United States covering 1980-2100, downscaled with Tethys from a GCAM-USA scenario ensemble. Includes irrigation, thermoelectric, domestic, livestock, manufacturing, and mining demands, separately for withdrawals and consumption, plus per-cell renewable vs. non-renewable source attributions."
+abstract: "A gridded (1/8 degree), monthly, multi-sector water-demand dataset for the contiguous United States covering 1980-2100, downscaled with Tethys from a GCAM-USA scenario ensemble. Includes irrigation, thermoelectric, domestic, livestock, manufacturing, and mining demands, separately for withdrawals and consumption, plus per-cell groundwater-to-surface water source attributions."
 type: dataset
 license: CC-BY-4.0
+doi: "10.57931/3366643"
 url: "https://github.com/IMMM-SFA/tethys_integration_metarepo"
 keywords:
   - water demand
