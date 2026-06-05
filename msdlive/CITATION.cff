@@ -1,0 +1,69 @@
+cff-version: 1.2.0
+message: "If you use this dataset in your work, please cite it as below."
+title: "IM3 Tethys CONUS multi-sector water-demand dataset (1/8 degree, monthly, 1980-2100)"
+abstract: "A gridded (1/8 degree), monthly, multi-sector water-demand dataset for the contiguous United States covering 1980-2100, downscaled with Tethys from a GCAM-USA scenario ensemble. Includes irrigation, thermoelectric, domestic, livestock, manufacturing, and mining demands, separately for withdrawals and consumption, plus per-cell renewable vs. non-renewable source attributions."
+type: dataset
+license: CC-BY-4.0
+url: "https://github.com/IMMM-SFA/tethys_integration_metarepo"
+keywords:
+  - water demand
+  - water scarcity
+  - downscaling
+  - GCAM-USA
+  - Tethys
+  - CONUS
+  - multisector dynamics
+  - IM3
+authors:
+  - family-names: "Bracken"
+    given-names: "Cameron"
+    orcid: "https://orcid.org/0000-0003-1917-402X"
+    affiliation: "Pacific Northwest National Laboratory, Richland, WA, USA"
+    email: "cameron.bracken@pnnl.gov"
+    role: "Project administration, Validation, Visualization, Writing - original draft"
+  - family-names: "Niazi"
+    given-names: "Hassan"
+    orcid: "https://orcid.org/0000-0001-6556-2854"
+    affiliation: "Joint Global Change Research Institute, Pacific Northwest National Laboratory, College Park, MD, USA"
+    email: "hassan.niazi@pnnl.gov"
+    role: "Software, Methodology, Investigation"
+  - family-names: "Thurber"
+    given-names: "Travis"
+    orcid: "https://orcid.org/0000-0002-4370-9971"
+    affiliation: "Pacific Northwest National Laboratory, Richland, WA, USA"
+    role: "Software, Investigation"
+  - family-names: "Thompson"
+    given-names: "Isaac"
+    orcid: "https://orcid.org/0000-0001-9594-0043"
+    affiliation: "Joint Global Change Research Institute, Pacific Northwest National Laboratory, College Park, MD, USA"
+    role: "Writing - original draft, Methodology, Software"
+  - family-names: "Tamaddun"
+    given-names: "Kazi"
+    orcid: "https://orcid.org/0000-0001-6704-3767"
+    affiliation: "Pacific Northwest National Laboratory, Richland, WA, USA"
+    role: "Methodology, Investigation"
+  - family-names: "Eldardiry"
+    given-names: "Hisham"
+    orcid: "https://orcid.org/0000-0002-2932-7459"
+    affiliation: "University of Washington, Seattle, WA, USA"
+    role: "Methodology, Data curation"
+  - family-names: "Mongird"
+    given-names: "Kendall"
+    orcid: "https://orcid.org/0000-0003-2807-7088"
+    affiliation: "Pacific Northwest National Laboratory, Richland, WA, USA"
+    role: "Methodology, Software"
+  - family-names: "Voisin"
+    given-names: "Nathalie"
+    orcid: "https://orcid.org/0000-0002-6848-449X"
+    affiliation: "Pacific Northwest National Laboratory, Richland, WA, USA; University of Washington, Seattle, WA, USA"
+    role: "Conceptualization, Supervision, Writing - review & editing"
+  - family-names: "Sun"
+    given-names: "Ning"
+    orcid: "https://orcid.org/0000-0002-4094-4482"
+    affiliation: "Pacific Northwest National Laboratory, Richland, WA, USA"
+    role: "Project administration, Conceptualization"
+  - family-names: "Rice"
+    given-names: "Jennie"
+    orcid: "https://orcid.org/0000-0002-7833-9456"
+    affiliation: "Pacific Northwest National Laboratory, Richland, WA, USA"
+    role: "Supervision, Funding acquisition, Writing - review & editing"
