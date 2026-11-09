@@ -18,10 +18,14 @@ environments:
     # macOS laptop with external data volume
     data_root: /Volumes/data
     tethys_output: /Volumes/data/tethys
+    tethys_raw_output: /Volumes/data/tethys/output
     tethys_canonical_output: /Volumes/data/tethys/output_adjusted_usgs_method2
+    data_release: /Volumes/data/tethys/tethys-dataset-msdlive_2026-06-04
     shapefiles: /Volumes/data/shapefiles
     tgw_hydro: /Volumes/data/tgw-hydro
     mosartwmpy_output: /Volumes/data/mosartwmpy
+    # usgs_baseline has no local copy; adjust_runoff_shares_method2_kazi.py
+    # runs on deception only until one is staged here.
 
   pnl_pic:
     # Legacy PNNL PIC cluster; many .py / .sh wrappers still point here
@@ -32,9 +36,23 @@ environments:
     venv: /pic/projects/im3/tethys/tethys-im3-scenarios/venv
 
   pnl_rcfs:
-    # Current PNNL HPC target (deception)
+    # Current PNNL HPC target (deception).
+    #
+    # Code and bulk output live in different directories here. This repo is
+    # the code copy; the 33G raw and adjusted output trees stay in
+    # tethys-metarepo-hasan, which was named tethys-metarepo until it was
+    # renamed to mark it as Hasan's working copy.
     project_root: /rcfs/projects/im3
     tethys_base: /rcfs/projects/im3/tethys
+    metarepo: /rcfs/projects/im3/tethys/tethys-integration-metarepo
+    # 43G already in the category layout, all nine scenarios. Read by
+    # run_scenario_decep.py as ../../../../input, and merged in by
+    # link_data_layout.py so the repo need not carry a second copy.
+    structured_input: /rcfs/projects/im3/tethys/input
+    tethys_raw_output: /rcfs/projects/im3/tethys/tethys-metarepo-hasan/output
+    tethys_canonical_output: /rcfs/projects/im3/tethys/tethys-metarepo-hasan/output_adjusted_usgs_method2
+    usgs_baseline: /rcfs/projects/im3/tethys/tethys-metarepo-hasan/scripts/adjust_runoff_shares/usgs_preprocessed_baseline.nc
+    data_release: /rcfs/projects/im3/tethys/tethys-water-demand-data
     mosartwmpy_base: /rcfs/projects/im3/mosartwmpy
     venv_default: /rcfs/projects/im3/tethys/venv
     venv_rocky: /rcfs/projects/im3/tethys/venv_rocky

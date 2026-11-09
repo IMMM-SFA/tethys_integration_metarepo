@@ -9,7 +9,7 @@ demand_type: consumption
 
 output_dir: ./output/
 
-gcam_db:  ../gcam-usa-im3/20240606_to_be_validated/database_rcp45cooler_ssp3  # only care about historical though
+gcam_db:  ./data/gcam/database_rcp45cooler_ssp3  # only care about historical though
 
 
 # list of map files
@@ -100,7 +100,7 @@ temporal_config:
       cddfile: ./data/monthly/Tavg_HDD_CDD/Tavg_HDD_CDD_Historical_*.nc
       hddvar: HDD
       cddvar: CDD
-      gcam_db: ../gcam-usa-im3/20240606_to_be_validated/database_rcp45cooler_ssp3
+      gcam_db: ./data/gcam/database_rcp45cooler_ssp3
       regionfile: ./data/maps/states.tif
       
   Irrigation:
