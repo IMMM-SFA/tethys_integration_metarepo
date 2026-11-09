@@ -17,12 +17,16 @@ and reports:
      values (0.20, 0.40, 0.40) so the sensitivity is to the case partition
      only, not the GCAM share.
 
+Paths resolve through paths.yml; retarget them there, not here.
+
 Inputs (HDD/CDD prepared by gsi_nersc/Tavg_HDD_CDD.py):
-  /Volumes/data/m5-backup/projects/im3/water-scarcity/tethys_integration_metarepo/data/historical/Tavg_HDD_CDD_Historical_{decade}.nc
+  {main_data_dir}/historical/Tavg_HDD_CDD_Historical_*.nc
 
 Outputs:
-  ../../tethys-data-paper/figures/eq5-hdd-cdd-sensitivity-summary.csv
-  ../../tethys-data-paper/figures/eq5-hdd-cdd-sensitivity.png
+  {figures_dir}/eq5-hdd-cdd-sensitivity.png
+  {paper_figures_dir}/eq5-hdd-cdd-sensitivity.png
+  {paper_figures_dir}/eq5-hdd-cdd-sensitivity-summary.csv
+  {paper_figures_dir}/eq5-hdd-cdd-sensitivity-monthly-profile.csv
 """
 
 # %% setup

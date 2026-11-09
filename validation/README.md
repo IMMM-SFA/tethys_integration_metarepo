@@ -13,8 +13,8 @@ Numbered pipeline that compares Tethys output against USGS water-use observation
 | 3 | `3-combine-usgs-tethys.R` | R | Join Tethys and USGS at the HUC scale. |
 | 4a | `4a-compare-tethys-usgs.R` | R | HUC2/4/6/8 comparison figures. |
 | 4b | `4b-compare-tethys-usgs-huc12.R` | R | HUC12 comparison figures. |
-| 5a | `5a-paper-figures.R` | R | Publication figures (Tethys vs USGS, dominant sector, projections). |
-| 5d | `5d-dominant-sector-map.py` | Python | Dominant-sector map (matplotlib version) for the paper. |
+| 5a | `5b-paper-figures.R` | R | Publication figures (Tethys vs USGS, dominant sector, projections). |
+| 5d | `old/5d-dominant-sector-map.py` | Python | Dominant-sector map (matplotlib version) for the paper. |
 | 6 | `6-compute-table2-metrics.py` | Python | Per-sector metrics for paper Table 2. |
 
 The USGS groundwater / surface-water split now lives next to its consumer at `../scripts/2_postprocess/adjust_runoff_shares/2b-process-usgs-gwsw-split.R` and is no longer part of this pipeline.
@@ -28,10 +28,10 @@ Earlier stages kept for reference (now under `old/`):
 Every input path used by the active stages is centralised in **`paths.yml`** — a flat key→path map. Scripts read it directly with `yaml.safe_load` (Python) or `yaml::read_yaml` (R) and index by key, e.g. `P["huc6_shapefile"]` / `P$huc6_shapefile`. To retarget a path on a new machine you edit `paths.yml`, not seven scripts.
 
 Keys in `paths.yml`:
-- `tethys_output_canonical`, `tethys_output_raw` — Tethys output roots. `canonical` is `/Volumes/data/tethys/output_adjusted_usgs_method2`; `raw` is `/Volumes/data/tethys/output`.
+- `tethys_output_canonical`, `tethys_output_raw` — Tethys output roots. Both currently resolve to the same post-adjust tree (`output_adjusted_usgs_method2`), which is what every published figure and Table 2 metric was computed from. Do not split them without regenerating those.
 - `tethys_validation_csv_pattern` — per-HUC Tethys CSV pattern used by 4b. Format with `{sector}`, `{demand_type}`, `{huc_level}`.
 - `usgs_public_supply_cu`, `usgs_public_supply_wd`, `usgs_irrigation_cu`, `usgs_irrigation_wd`, `usgs_thermoelectric` — 2009–2020 USGS monthly water-use CSVs consumed by 2a.
-- `huc{2,4,6,8,12}_shapefile` — per-level shapefile mapping. `huc6_shapefile` points at `../data/shapefiles/HUC6/HUC6.shp` (bundled with the metarepo); the others are still on `/Volumes/data/shapefiles/`. Override any level without touching scripts.
+- `huc{2,4,6,8,12}_shapefile` — per-level shapefile mapping. `huc6_shapefile` points at `../data/shapefiles/HUC6/HUC6.shp` (bundled with the metarepo); the others point at an external shapefile tree. Override any level without touching scripts.
 - `data_dir`, `figures_dir`, `paper_figures_dir` — per-script CSV cache and figure output dirs.
 
 Relative values should be interpreted relative to `validation/` (the script's CWD when run via the pixi tasks). The scripts run from there, so `../data/...` and `data` resolve correctly without extra logic.
@@ -78,7 +78,7 @@ pixi run dominant-sector-map       # 5d (writes paper PNG + CSV)
 Or invoke a single script directly:
 
 ```bash
-pixi run Rscript 5a-paper-figures.R --no-paper
+pixi run Rscript 5b-paper-figures.R --no-paper
 pixi run python 1a-postprocess-tethys.py
 pixi run python 6-compute-table2-metrics.py
 ```
@@ -91,7 +91,7 @@ pixi run python 6-compute-table2-metrics.py
 - Sectors: Domestic, Electricity, Irrigation, Livestock, Manufacturing, Mining.
 - Scenarios: `historical`, `rcp{45,85}{cooler,hotter}_ssp{3,5}`.
 - Historical Tethys output runs 1975–2020; futures run 2020–2100. Scenario timeseries plots join them at year 2020 so the lines read continuously.
-- Dominant-sector palette: Okabe-Ito (Wong 2011), shared between `5a-paper-figures.R` and `5d-dominant-sector-map.py`.
+- Dominant-sector palette: Okabe-Ito (Wong 2011), shared between `5b-paper-figures.R` and `old/5d-dominant-sector-map.py`.
 
 ## R formatting
 

@@ -50,8 +50,8 @@ tethys_integration_metarepo/
 │   └── 3_config/
 │       ├── test_config.yml           # canonical Tethys config
 │       ├── paths.yml                 # NERSC / PIC / RCFS / local base paths
+│       ├── link_data_layout.py       # flat data/ -> structured symlink tree
 │       └── reference_data/
-├── sensitivity/                      # Eq. 5 HDD/CDD threshold sensitivity
 └── validation/                       # numbered Tethys vs USGS comparison
     ├── 1a-postprocess-tethys.py
     ├── 1b-process-previous-tethys.R          # Khan 2023 prior-version compare
@@ -60,11 +60,16 @@ tethys_integration_metarepo/
     ├── 3-combine-usgs-tethys.R
     ├── 4a-compare-tethys-usgs.R              # HUC6
     ├── 4b-compare-tethys-usgs-huc12.R
-    ├── 5a-paper-figures.R
-    ├── 5d-dominant-sector-map.py
+    ├── 5a-demand-sector-by-grid-cell.py
+    ├── 5a-paper-figures-save.R
+    ├── 5b-paper-figures.R
     ├── 6-compute-table2-metrics.py
+    ├── 7-eq5-hdd-cdd-thresholds.py           # paper Figure 9
+    ├── old/                                  # 5c, 5d -- still produce paper figures
     └── README.md                             # pixi tasks + stage detail
 ```
+
+`old/5c-scenarios-timeseries.R` and `old/5d-dominant-sector-map.py` still generate paper Figures 8 and 1. They sit under `old/` despite being current deliverables; promote them to `validation/` when the stage-5 numbering is next cleaned up. Two different scripts also share the `5a-` prefix.
 
 Two pixi environments live here: the top-level (`pixi.toml`, Python 3.12, `msdlive-cli`, `awscli` for dataset publishing) and `validation/pixi.toml` (R 4.4+, xarray, geopandas, xagg, tidyverse, sf -- covers every numbered validation stage).
 
@@ -107,7 +112,7 @@ Three environments are supported. Paths are registered in `scripts/3_config/path
 
 | Environment | Base path | Notes |
 |---|---|---|
-| Local (macOS) | `/Volumes/data/tethys/` | Mount the external volume. Canonical output in `output_adjusted_usgs_method2/`. |
+| Workstation | keyed as `local` in `paths.yml` | Mount the external data volume. Canonical output in `output_adjusted_usgs_method2/`. |
 | PNNL PIC | `/pic/projects/im3/tethys/tethys-im3-scenarios/` | Legacy; most hard-coded paths in `compute_gsi.py` / `compute_deficit.py` still point here. |
 | PNNL RCFS / deception | `/rcfs/projects/im3/tethys/` | Current HPC target. `venv/` for default OS, `venv_rocky/` for the Rocky test OS. |
 | NERSC | `/global/cfs/projectdirs/m2702/dardiry/Tethys_Demand/` | Used only for the gsi_nersc stage. |
@@ -124,6 +129,25 @@ pip install tethys-downscale  # or `pip install -e ../tethys-code` from source
 Stage 0 and validation steps need the data volume mounted (local) or HPC-side access to `/pic/projects/im3/` or `/rcfs/projects/im3/`. Tethys input files (livestock, maps, GCAM database, climate, LULC, power plants, population) are published on MSD-Live -- see `data/README.md`.
 
 R ≥ 4.5 for the validation scripts, with `tidyverse`, `sf`, `ncdf4`, `scico`, `ggthemes`.
+
+### Data layout
+
+Input data is delivered flat, one directory per scenario (`data/historical/`). Tethys reads it by category instead (`data/maps/`, `data/monthly/`, …), so build the category tree before the first run:
+
+```bash
+python scripts/3_config/link_data_layout.py          # from the repo root
+python scripts/3_config/link_data_layout.py --dry-run
+```
+
+The script creates relative symlinks into the flat scenario directories, so nothing is copied and the delivered layout is untouched. It is idempotent, it prunes links whose target has gone, it refuses to overwrite real files, and it reports any category it found no source files for. Re-run it after fetching new input data or adding a scenario. The generated directories are gitignored along with the rest of `data/`.
+
+An already-structured tree can be merged in behind the flat directories:
+
+```bash
+python scripts/3_config/link_data_layout.py --fallback /rcfs/projects/im3/tethys/input
+```
+
+With no flag it uses `structured_input` for `$TETHYS_ENV` from `scripts/3_config/paths.yml`, which is set for `pnl_rcfs` and unset elsewhere. On deception that tree holds 43G in this layout for all nine scenarios, so the repo carries only what it lacks. Sources merge per destination filename and the flat directory wins, letting one category draw from both.
 
 ## Stage 0 -- Preprocessing
 
@@ -194,11 +218,15 @@ All run drivers consume `scripts/3_config/test_config.yml` as the canonical Teth
 
 GCAM-USA reports per-basin renewable vs non-renewable withdrawals for aggregate demand but does not split by sector. We therefore adjust the basin-level shares against USGS observations and apply them to each sector (except electricity, which we constrain to surface water only).
 
-Canonical script (matches output path naming `/Volumes/data/tethys/output_adjusted_usgs_method2/`):
+Canonical script (produces the tree named `output_adjusted_usgs_method2`):
 
 ```bash
-python scripts/2_postprocess/adjust_runoff_shares/adjust_runoff_shares_method2_kazi.py
+python scripts/2_postprocess/adjust_runoff_shares/adjust_runoff_shares_method2_kazi.py --force
 ```
+
+Roots come from `scripts/3_config/paths.yml` under `$TETHYS_ENV` (default `pnl_rcfs`), and each is overridable with `--orig-root`, `--method2-root`, `--usgs-baseline`. On deception the raw and adjusted trees live in `tethys-metarepo-hasan/`, not in this repo -- see the `pnl_rcfs` block in `paths.yml`.
+
+The rebuild deletes `--method2-root` and re-copies `--orig-root` over it, roughly 33G across the nine scenarios. `--force` is required when the target already exists.
 
 The historical-only variant (`adjust_runoff_shares_hist.py`) is kept for comparison. It consumes `usgs-runoff-share-2009-2020.nc` (3D -- `lat × lon × Z1=year`) and takes the temporal mean internally; the file is built by:
 
@@ -227,15 +255,15 @@ After a scenario completes, run the numbered validation pipeline from `validatio
 
 ```bash
 cd validation
-python 1-postprocess-tethys.py        # aggregate 1/8° to HUCs with xagg
+python 1a-postprocess-tethys.py        # aggregate 1/8° to HUCs with xagg
 Rscript 2a-process-usgs-data.R
 Rscript 3-combine-usgs-tethys.R
 Rscript 4a-compare-tethys-usgs.R      # HUC6 comparison
 Rscript 4b-compare-tethys-usgs-huc12.R # HUC12 comparison
-Rscript 5a-paper-figures.R            # writes to paper/ submodule
+Rscript 5b-paper-figures.R            # writes to paper/ submodule
 ```
 
-Validation scripts need `/Volumes/data/tethys/` (local) or equivalent mounted. See `validation/README.md` for the pixi-task wrappers around each step.
+Validation scripts need the Tethys output tree mounted at whatever `validation/paths.yml` points to. See `validation/README.md` for the pixi-task wrappers around each step.
 
 ## Outputs
 
@@ -270,7 +298,7 @@ This section describes how to regenerate every figure and table in the Tethys CO
 All scripts read from the canonical recent output:
 
 ```
-/Volumes/data/tethys/output_adjusted_usgs_method2/
+<tethys_output_canonical>/        # see validation/paths.yml
 ├── historical/
 ├── rcp45cooler_ssp3/
 ├── rcp45cooler_ssp5/
@@ -282,9 +310,9 @@ All scripts read from the canonical recent output:
 └── rcp85hotter_ssp5/
 ```
 
-The HDD/CDD-derived sensitivity test additionally reads `/Volumes/data/m5-backup/projects/im3/water-scarcity/tethys_integration_metarepo/data/historical/Tavg_HDD_CDD_Historical_*.nc`.
+The HDD/CDD-derived sensitivity test additionally reads `data/historical/Tavg_HDD_CDD_Historical_*.nc`.
 
-If those volumes are not mounted, edit the path constants at the top of each script.
+Paths come from `validation/paths.yml`, so retarget them there rather than editing each script. If a path fails, the external volume is not mounted.
 
 ### Python environment
 
@@ -313,11 +341,11 @@ The R formatter `air` (line-width 100, declared in `air.toml`) is configured for
 ### Figure 1 -- Dominant water-use sector across CONUS
 
 **Output file:** `paper/usage1-dominant-sector-tethys-grid.png`
-**Script:** `validation/5d-dominant-sector-map.py`
+**Script:** `validation/old/5d-dominant-sector-map.py`
 
 ```bash
 cd validation
-python 5d-dominant-sector-map.py
+python old/5d-dominant-sector-map.py
 ```
 
 The script reads the per-sector `*_consumption.nc` files from `historical/`, takes the cell-wise argmax across sectors, and renders the labelled grid. Output also includes a CSV of the labelled grid at `paper/figures/dominant-sector-tethys-grid.csv`.
@@ -354,7 +382,7 @@ The standalone class crops the PDF to the figure's bounding box, so the include 
 cd validation
 
 # 1. Spatial-weight Tethys grid to HUC polygons (requires xagg)
-python 1-postprocess-tethys.py
+python 1a-postprocess-tethys.py
 
 # 2. Process USGS reference data (R)
 Rscript 2a-process-usgs-data.R
@@ -371,11 +399,11 @@ Rscript 4a-compare-tethys-usgs.R
 ### Figure 8 -- Inter-scenario consistency (CONUS annual demand)
 
 **Output file:** `paper/val6-scenarios-annual-conus-timeseries.png`
-**Script:** `validation/5c-scenarios-timeseries.R`
+**Script:** `validation/old/5c-scenarios-timeseries.R`
 
 ```bash
 cd validation
-Rscript 5c-scenarios-timeseries.R
+Rscript old/5c-scenarios-timeseries.R
 ```
 
 The script reads `<scenario>/<Sector>_withdrawals.nc` for each of the nine scenarios, sums to CONUS-annual totals, and plots one line per scenario per sector. The historical line runs through 2019; each future scenario is joined to the historical line at 2019 so the visual hand-off is continuous. The previous version is preserved as `val6-scenarios-annual-conus-timeseries_v3rollback.png`.
@@ -388,28 +416,28 @@ The script reads `<scenario>/<Sector>_withdrawals.nc` for each of the nine scena
 * `paper/figures/eq5-hdd-cdd-sensitivity-summary.csv`
 * `paper/figures/eq5-hdd-cdd-sensitivity-monthly-profile.csv`
 
-**Script:** `sensitivity/eq5-hdd-cdd-thresholds.py`
+**Script:** `validation/7-eq5-hdd-cdd-thresholds.py`
 
 ```bash
 cd sensitivity
 python eq5-hdd-cdd-thresholds.py
 ```
 
-The script reads `Tavg_HDD_CDD_Historical_2010_2019.nc` from `/Volumes/data/m5-backup/.../tethys_integration_metarepo/data/historical/`, classifies each cell-year into one of the four cases of Eq. 5 under three threshold pairs ((325, 225), default (650, 450), (975, 675)), and plots the resulting CONUS-mean monthly Electricity weight profile under illustrative GCAM-USA shares (p_heat = 0.20, p_cool = 0.40, p_other = 0.40). Edit the `SCENARIOS` and `P_HEAT/P_COOL/P_OTHER` blocks to test other perturbations.
+The script globs `Tavg_HDD_CDD_Historical_*.nc` from `main_data_dir/historical` as resolved through `validation/paths.yml`, classifies each cell-year into one of the four cases of Eq. 5 under three threshold pairs ((325, 225), default (650, 450), (975, 675)), and plots the resulting CONUS-mean monthly Electricity weight profile under illustrative GCAM-USA shares (p_heat = 0.20, p_cool = 0.40, p_other = 0.40). Edit the `SCENARIOS` and `P_HEAT/P_COOL/P_OTHER` blocks to test other perturbations.
 
 ## Table-by-table reproduction
 
 ### Table 2 -- Validation metrics for withdrawals at HUC6
 
 **Output file:** `paper/figures/validation-metrics.csv`
-**Script:** `validation/compute-table2-metrics.py`
+**Script:** `validation/6-compute-table2-metrics.py`
 
 ```bash
 cd validation
-python compute-table2-metrics.py
+python 6-compute-table2-metrics.py
 ```
 
-The script consumes the per-HUC6 USGS/Tethys CSVs that `1-postprocess-tethys.py` produces in `validation/data/`, sums to annual per HUC6, averages across the USGS reporting years, and computes Pearson r, Spearman ρ, NSE, KGE (with α/β/r decomposition), MBE, NRMSE, and MedAPE per sector. Domestic USGS is scaled by 1.12 to match the public-supply-only definition (consistent with `4a-compare-tethys-usgs.R`).
+The script consumes the per-HUC6 USGS/Tethys CSVs that `1a-postprocess-tethys.py` produces in `validation/data/`, sums to annual per HUC6, averages across the USGS reporting years, and computes Pearson r, Spearman ρ, NSE, KGE (with α/β/r decomposition), MBE, NRMSE, and MedAPE per sector. Domestic USGS is scaled by 1.12 to match the public-supply-only definition (consistent with `4a-compare-tethys-usgs.R`).
 
 The values written to the manuscript Table 2 are the rounded `pearson_r`, `spearman_rho`, `nse`, `mbe_pct`, `nrmse_pct`, and `medape_pct` columns for each sector.
 
@@ -434,15 +462,15 @@ The full pipeline from raw Tethys output to all figures and tables can be chaine
 ```bash
 # data preparation
 cd validation
-python 1-postprocess-tethys.py
+python 1a-postprocess-tethys.py
 Rscript 2a-process-usgs-data.R
 Rscript 3-combine-usgs-tethys.R
 
 # manuscript figures
 Rscript 4a-compare-tethys-usgs.R               # val1..val5
-Rscript 5c-scenarios-timeseries.R              # val6
-python 5d-dominant-sector-map.py               # Figure 1
-python compute-table2-metrics.py               # Table 2 csv
+Rscript old/5c-scenarios-timeseries.R              # val6
+python old/5d-dominant-sector-map.py               # Figure 1
+python 6-compute-table2-metrics.py               # Table 2 csv
 cd ../sensitivity
 python eq5-hdd-cdd-thresholds.py               # Figure 9
 ```
@@ -450,7 +478,7 @@ python eq5-hdd-cdd-thresholds.py               # Figure 9
 ## Troubleshooting
 
 * **`xarray.open_mfdataset` complaining about coordinates:** make sure the HDD/CDD per-decade NetCDFs really have matching `lat`/`lon`/`year` axes. The decade glob in the sensitivity script is intentionally narrowed to `*2010_2019*.nc`.
-* **R script path rot:** `4a-compare-tethys-usgs.R` reads `/Volumes/data/shapefiles/HUC<n>/HUC<n>.shp`. If your shapefile path differs, edit the `huc_shape` block.
+* **Shapefile path rot:** the HUC comparison stages read the `huc<n>_shapefile` keys from `validation/paths.yml`. If your shapefile location differs, edit those keys rather than the scripts.
 * **`figures/` directory missing:** Each script `mkdir -p`s its output directory; if you change the output root, change the path constants in the script and in `main_v4.tex` `\includegraphics{...}` calls.
 
 ---
@@ -499,3 +527,18 @@ However, we would still want to restrict fossil water usage to grid cells that c
 Such strategies would then need to be implemented into Tethys.
 
 In-depth proposal document: https://pnnl-my.sharepoint.com/:w:/g/personal/hassan_niazi_pnnl_gov/EYcftCLewBpDgnc8mHZp2vcB5SE8A7jN4zT-R9-9PHEDzA?e=5JiX8E
+
+## Data location
+
+Bulk inputs are not kept in the repository. Depending on the checkout, these paths are either real directories or symlinks into an external data tree:
+
+- `data/historical`, `data/shapefiles`, `data/USGS-2025`
+- `validation/data/ssp3_rcp45_gfdl_{withdrawals,consumption}_{sectors,crops}_annual`
+- `validation/data/tethys_total_huc{8,10,12}.csv`
+- `validation/data/usgs_{irrigation,public_supply,thermoelectric}_*_huc12_monthly_*.csv`
+
+Base paths per environment are registered in `scripts/3_config/paths.yml`; the validation pipeline resolves its own through `validation/paths.yml`. Point those at wherever the data is mounted rather than editing scripts. See `DATA.md` for the full inventory of what the repo reads and writes.
+
+## AI use
+
+Parts of this repository were written with AI assistance. `scripts/3_config/link_data_layout.py`, the path parameterization in `scripts/2_postprocess/adjust_runoff_shares/adjust_runoff_shares_method2_kazi.py` and `scripts/1_runs/im3_tethys_runs/tethys_run.sh`, and `DATA.md` were drafted with Claude Opus 5 (Claude Code) in November 2026 and reviewed by the authors. Scientific content, method choices, and all results remain the authors' responsibility.

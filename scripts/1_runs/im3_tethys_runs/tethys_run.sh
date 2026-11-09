@@ -7,8 +7,10 @@
 # generic: sbatch tethys_run.sh # will run run_scenario_decep.py with all scenarios
 # one scenario short: sbatch -p short,slurm tethys_run.sh run_scenario_decep.py rcp45cooler_ssp3
 
-# locate to the directory 
-cd /rcfs/projects/im3/tethys/tethys-metarepo/scripts/im3_tethys_runs
+# Directory holding the run drivers. Override with TETHYS_RUN_DIR.
+# Not derived from $BASH_SOURCE: sbatch runs a spooled copy of this script.
+RUN_DIR=${TETHYS_RUN_DIR:-/rcfs/projects/im3/tethys/tethys-integration-metarepo/scripts/1_runs/im3_tethys_runs}
+cd "$RUN_DIR" || { echo "error: cannot cd to $RUN_DIR"; exit 1; }
 
 # load packages and environment 
 module unload python/3.7.0
@@ -49,10 +51,10 @@ else
     echo -e "Running script: $SCRIPT_NAME with all scenarios \n"
     python $SCRIPT_NAME
 fi
-echo "==================================================="
 
-# check error status and print error message
+# capture python's status here; any command in between overwrites $?
 err=$?
+echo "==================================================="
 
 # Define the associative array with exit status codes and error messages
 declare -A error_messages=(
@@ -67,11 +69,11 @@ declare -A error_messages=(
     [255]="Exit Status Out of Range - The exit status was out of the valid range."
 )
 
-# Print the error message based on the exit status
-if [[ $err -eq 0 || -z ${error_messages[$err]} ]]; then
-    echo "Error: Unknown error occurred. Exit Status: $err"
+# Print the message matching the exit status
+if [[ -n ${error_messages[$err]} ]]; then
+    echo "${error_messages[$err]} (Exit Status: $err)"
 else
-    echo "Error: ${error_messages[$err]} (Exit Status: $err)"
+    echo "Unknown exit status: $err"
 fi
 
 end=`date +%s.$N`

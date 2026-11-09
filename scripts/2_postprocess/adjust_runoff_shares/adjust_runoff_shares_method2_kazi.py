@@ -1,10 +1,29 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+"""Adjust GCAM basin renewable/non-renewable shares against USGS (method 2).
 
+Rebuilds the adjusted output tree from the raw Tethys output, then rewrites
+gridded_runoff_shares.nc per scenario using the static USGS baseline and
+writes a per-scenario diagnostic PNG. Canonical producer of the tree named
+output_adjusted_usgs_method2.
+
+The rebuild deletes --method2-root and re-copies --orig-root over it, which
+is tens of GB on the full scenario set, so an existing tree requires --force.
+
+Paths default to scripts/3_config/paths.yml under $TETHYS_ENV (pnl_rcfs
+unless set). Code and bulk output live in different directories on
+deception; see the pnl_rcfs block there.
+"""
+
+import argparse
 import os
 import shutil
+import sys
+from pathlib import Path
+
 import numpy as np
 import xarray as xr
+import yaml
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -12,22 +31,64 @@ import matplotlib.pyplot as plt
 # --------------------------------------------------
 # PATHS
 # --------------------------------------------------
-ORIG_ROOT = "/rcfs/projects/im3/tethys/tethys-metarepo/output"
-METHOD2_ROOT = "/rcfs/projects/im3/tethys/tethys-metarepo/output_adjusted_usgs_method2"
+# Resolved from scripts/3_config/paths.yml, keyed by $TETHYS_ENV
+# (default pnl_rcfs). Override any of the three on the command line.
+PATHS_YML = Path(__file__).resolve().parents[2] / "3_config" / "paths.yml"
 
-USGS_BASELINE_FILE = (
-    "/rcfs/projects/im3/tethys/tethys-metarepo/scripts/adjust_runoff_shares/"
-    "usgs_preprocessed_baseline.nc"
-)
+
+def resolve_paths():
+    env = os.environ.get("TETHYS_ENV", "pnl_rcfs")
+    try:
+        cfg = yaml.safe_load(PATHS_YML.read_text())["environments"][env]
+    except KeyError:
+        sys.exit(f"error: no '{env}' environment in {PATHS_YML}")
+
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--orig-root", default=cfg.get("tethys_raw_output"),
+                    help="raw Tethys output tree, read-only")
+    ap.add_argument("--method2-root", default=cfg.get("tethys_canonical_output"),
+                    help="adjusted tree; REBUILT FROM SCRATCH, see --force")
+    ap.add_argument("--usgs-baseline", default=cfg.get("usgs_baseline"))
+    ap.add_argument("--force", action="store_true",
+                    help="allow deleting an existing --method2-root")
+    args = ap.parse_args()
+
+    missing = [k for k in ("orig_root", "method2_root", "usgs_baseline")
+               if not getattr(args, k)]
+    if missing:
+        sys.exit(f"error: {env} in {PATHS_YML} defines no " + ", ".join(missing))
+    return args
+
+
+args = resolve_paths()
+ORIG_ROOT = args.orig_root
+METHOD2_ROOT = args.method2_root
+USGS_BASELINE_FILE = args.usgs_baseline
+
+for label, path in (("--orig-root", ORIG_ROOT), ("--usgs-baseline", USGS_BASELINE_FILE)):
+    if not os.path.exists(path):
+        sys.exit(f"error: {label} does not exist: {path}")
+
+print(f"raw output:    {ORIG_ROOT}")
+print(f"adjusted tree: {METHOD2_ROOT}")
+print(f"usgs baseline: {USGS_BASELINE_FILE}\n")
 
 # --------------------------------------------------
 # REBUILD METHOD2 FOLDER (DETERMINISTIC)
 # --------------------------------------------------
+# The rebuild deletes METHOD2_ROOT outright and re-copies ORIG_ROOT over it,
+# which is tens of GB on the full scenario set. --force is the guard.
 if os.path.exists(METHOD2_ROOT):
+    if not args.force:
+        sys.exit(
+            f"error: {METHOD2_ROOT} already exists.\n"
+            "       This script deletes it and re-copies the raw tree over it.\n"
+            "       Pass --force if that is what you want."
+        )
     print("Removing existing _method2 folder...")
     shutil.rmtree(METHOD2_ROOT)
 
-print("Copying output ? _method2 ...")
+print("Copying raw output -> _method2 ...")
 shutil.copytree(ORIG_ROOT, METHOD2_ROOT)
 
 print("Copy complete.\n")

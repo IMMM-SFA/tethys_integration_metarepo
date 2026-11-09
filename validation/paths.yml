@@ -8,8 +8,13 @@
 
 # Tethys output roots — per-scenario subdirs with *_{withdrawals,
 # consumption}.nc per sector and gridded_runoff_shares.nc.
-tethys_output_canonical: /Volumes/data/tethys/output_adjusted_usgs_method2  # post-adjust; used by 5a/5d/6
-tethys_output_raw: /Volumes/data/tethys/output_adjusted_usgs_method2        # pre-adjust; used by 1a/1c/5b
+#
+# Both keys currently resolve to the SAME post-adjust tree. Every validation
+# figure and Table 2 metric in the paper was computed that way, so changing
+# either one changes published numbers. Pre-adjust output is at
+# /Volumes/data/tethys/output if a raw comparison is ever wanted.
+tethys_output_canonical: /Volumes/data/tethys/output_adjusted_usgs_method2  # used by 5b/6
+tethys_output_raw: /Volumes/data/tethys/output_adjusted_usgs_method2        # used by 1a/1c/5a
 
 # Per-HUC pre-aggregated Tethys CSVs (4b). Keys: sector, demand_type, huc_level.
 tethys_validation_csv_pattern: data/tethys_{sector}_{demand_type}_huc{huc_level}.csv

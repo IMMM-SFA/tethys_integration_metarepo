@@ -43,7 +43,7 @@ Stage 5a writes into both `validation/figures/` and `../paper/figures/` by defau
 
 ## Working with the paper submodule
 
-`paper/` is the LaTeX manuscript (`main_v4.tex`, `bib/`, `figures/`, `flow-chart.tex`, `previous_versions/`, `reviews/`, `diffs/`, `build_diff.sh`). Figures are written into it by validation stages 5a/5d and `sensitivity/eq5-hdd-cdd-thresholds.py`. Touch the submodule only when:
+`paper/` is the LaTeX manuscript (`main_v4.tex`, `bib/`, `figures/`, `flow-chart.tex`, `previous_versions/`, `reviews/`, `diffs/`, `build_diff.sh`). Figures are written into it by validation stages 5a/5d and `validation/7-eq5-hdd-cdd-thresholds.py`. Touch the submodule only when:
 - regenerating figures via the validation/sensitivity scripts, or
 - the user explicitly asks for a manuscript edit.
 
@@ -58,17 +58,18 @@ Commits inside `paper/` are separate from the metarepo; remember to `git add pap
 
 ## Sensitivity analyses
 
-`sensitivity/eq5-hdd-cdd-thresholds.py` reproduces paper Figure 9 (Eq. 5 HDD/CDD threshold sensitivity for Electricity weights). Reads `Tavg_HDD_CDD_Historical_2010_2019.nc` from `/Volumes/data/m5-backup/.../tethys_integration_metarepo/data/historical/`. New sensitivity scripts go here, not under `validation/` or `scripts/`.
+`validation/7-eq5-hdd-cdd-thresholds.py` reproduces paper Figure 9 (Eq. 5 HDD/CDD threshold sensitivity for Electricity weights). It globs `Tavg_HDD_CDD_Historical_*.nc` from `main_data_dir/historical` as resolved through `validation/paths.yml`, so retarget it there rather than in the script. New sensitivity scripts belong alongside it in `validation/`, numbered after the stage they follow.
 
 ## Local data prerequisites
 
-- `/Volumes/data/tethys/output_adjusted_usgs_method2/` -- canonical Tethys output read by stages 5a, 5d, 6, the sponsor deck, and the manuscript scripts.
-- `/Volumes/data/shapefiles/HUC{2,4,6,8,12}/HUC<n>.shp` -- HUC polygons. `4a-compare-tethys-usgs.R` etc. read directly from this path.
+- The canonical Tethys output tree (`output_adjusted_usgs_method2/`) is read by stages 5a, 5d, 6, the sponsor deck, and the manuscript scripts. Both `tethys_output_canonical` and `tethys_output_raw` in `validation/paths.yml` resolve here; the published paper numbers depend on that, so do not split them without regenerating the figures and Table 2.
+- HUC polygons for levels 2/4/6/8/12, resolved from the `huc<n>_shapefile` keys in `validation/paths.yml`.
+- `data/` arrives flat, one directory per scenario. Tethys reads it by category, so run `python scripts/3_config/link_data_layout.py` from the repo root before the first Tethys run. It builds the category tree as relative symlinks, copies nothing, and is safe to re-run.
 
-If a script fails with a `/Volumes/...` path error, the external volume isn't mounted; that's a user-side fix, not a code fix.
+If a script fails on a data path, the external volume isn't mounted; that's a user-side fix, not a code fix. Retarget paths in `paths.yml`, never in the scripts.
 
 ## Conventions specific to this repo
 
 - USGS Domestic is multiplied by 1.12 in `4a-compare-tethys-usgs.R` and `6-compute-table2-metrics.py` to align with the public-supply-only definition introduced after 2015. Keep the two scripts consistent if you change the factor.
 - Historical Tethys output runs 1975–2020; futures run 2020–2100. Scenario timeseries plots join them at 2020 for visual continuity.
-- Dominant-sector palette: Okabe-Ito (Wong 2011), shared between `5a-paper-figures.R` and `5d-dominant-sector-map.py`. Keep them in sync.
+- Dominant-sector palette: Okabe-Ito (Wong 2011), shared between `5b-paper-figures.R` and `old/5d-dominant-sector-map.py`. Keep them in sync.
