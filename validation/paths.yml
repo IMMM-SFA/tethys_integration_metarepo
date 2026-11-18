@@ -33,6 +33,7 @@ huc4_shapefile:  /Volumes/data/shapefiles/HUC4/HUC4.shp
 huc6_shapefile:  ../data/shapefiles/HUC6/HUC6.shp
 huc8_shapefile:  /Volumes/data/shapefiles/HUC8/HUC8.shp
 huc12_shapefile: /Volumes/data/shapefiles/HUC12/HUC12.shp
+state_shapefile: /Volumes/data/shapefiles/cb_2015_us_state_20m/cb_2015_us_state_20m.shp
 
 # Working directories (relative to validation/)
 data_dir: data

@@ -1,2 +1,4 @@
 *.csv
 *.nc
+# symlinks to /Volumes/data/projects/im3/water-scarcity/tethys-integration-metarepo/validation/data
+ssp3_rcp45_gfdl_*

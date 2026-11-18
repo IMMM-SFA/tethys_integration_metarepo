@@ -1,26 +1,31 @@
 """
-Compute the per-sector validation metrics for Table 2 of the TETHYS data paper.
+Compute per-sector validation metrics for Table 4 of the Tethys data paper.
 
 Inputs:
   validation/data/huc06-{Sector}-withdrawals-usgs-tethys.csv
 
-For each sector in {Domestic, Electricity, Irrigation}, aggregate to
-HUC6 annual totals (sum over months by huc and year), then compute
-against USGS:
-  - Pearson r
-  - Spearman rho
-  - NSE (Nash-Sutcliffe)
-  - KGE (Kling-Gupta with alpha/beta/r decomposition)
-  - MBE in percent of USGS mean
-  - NRMSE in percent of USGS mean
-  - MedAPE: median absolute percent error (excluding USGS=0 rows)
+Harmonized comparison window: 2010-2019 (strict overlap of the Tethys
+historical period 1980-2019 and all three USGS reanalysis sectors).
+
+For each sector in {Domestic (1.12x scaled and unscaled USGS Public Supply),
+Electricity, Irrigation}, sum monthly volumes to annual totals per HUC6 and
+year over 2010-2019, average across the 10-year window per HUC6 (excluding
+basins where USGS reports zero demand for that sector), and compute:
+  - Pearson r and Spearman rho
+  - NSE (Nash-Sutcliffe) and KGE (Kling-Gupta)
+  - MBE (%) relative to USGS mean
+  - MAE (km^3 yr^-1) and RMSE (km^3 yr^-1)
+  - NRMSE (%) relative to USGS mean
+  - MdAPE (%): median absolute percentage error, 100 * median(|sim - obs| / obs)
+  - MdAPD (%): median symmetric absolute percent difference,
+               100 * median(|sim - obs| / ((sim + obs) / 2))
 
 Outputs:
-  figures/validation-metrics.csv
-  - one row per sector with the metrics
+  {figures_dir}/validation-metrics.csv
+  {paper_figures_dir}/validation-metrics.csv
 
-Run:
-  python3 compute-table2-metrics.py
+Run (from validation/):
+  pixi run python 6-compute-table2-metrics.py
 """
 
 # %% setup
@@ -28,14 +33,28 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import yaml
 
 HERE = Path(__file__).resolve().parent
-DATA = HERE / "data"
-OUT = HERE.parent.parent / "tethys-data-paper" / "figures"
-OUT.mkdir(exist_ok=True, parents=True)
+with open(HERE / "paths.yml", encoding="utf-8") as fh:
+    P = yaml.safe_load(fh)
 
-SECTORS = ["Domestic", "Electricity", "Irrigation"]
+DATA = (HERE / P["data_dir"]).resolve()
+OUT_LOCAL = (HERE / P["figures_dir"]).resolve()
+OUT_PAPER = (HERE / P["paper_figures_dir"]).resolve()
+OUT_LOCAL.mkdir(exist_ok=True, parents=True)
+OUT_PAPER.mkdir(exist_ok=True, parents=True)
+
+START_YEAR = 2010
+END_YEAR = 2019
 DEMAND_TYPE = "withdrawals"
+
+SECTOR_SPECS = [
+    ("Domestic (1.12x USGS Public Supply)", "Domestic", 1.12),
+    ("Domestic (unscaled USGS Public Supply)", "Domestic", 1.00),
+    ("Electricity", "Electricity", 1.00),
+    ("Irrigation", "Irrigation", 1.00),
+]
 
 
 # %% metric functions
@@ -65,32 +84,51 @@ def mbe_pct(obs, sim):
     return 100.0 * float(np.mean(sim - obs) / np.mean(obs))
 
 
+def mae_val(obs, sim):
+    return float(np.mean(np.abs(sim - obs)))
+
+
+def rmse_val(obs, sim):
+    return float(np.sqrt(np.mean((sim - obs) ** 2)))
+
+
 def nrmse_pct(obs, sim):
-    rmse = float(np.sqrt(np.mean((sim - obs) ** 2)))
-    return 100.0 * rmse / float(np.mean(obs))
+    return 100.0 * rmse_val(obs, sim) / float(np.mean(obs))
 
 
-def medape_pct(obs, sim):
-    mask = obs != 0
+def mdape_pct(obs, sim):
+    mask = obs > 0
     return 100.0 * float(np.median(np.abs((sim[mask] - obs[mask]) / obs[mask])))
 
 
-# %% per-sector compute
+def mdapd_sym_pct(obs, sim):
+    denom = (sim + obs) / 2.0
+    mask = denom > 0
+    return 100.0 * float(np.median(np.abs((sim[mask] - obs[mask]) / denom[mask])))
+
+
+# %% per-sector compute (2010-2019 HUC6 annual means, USGS > 0)
 rows = []
-for sector in SECTORS:
-    csv = DATA / f"huc06-{sector}-{DEMAND_TYPE}-usgs-tethys.csv"
+for label, sector_file, usgs_scale in SECTOR_SPECS:
+    csv = DATA / f"huc06-{sector_file}-{DEMAND_TYPE}-usgs-tethys.csv"
     df = pd.read_csv(csv, dtype={"huc": str})
     df["year"] = pd.to_datetime(df["datetime"]).dt.year
+    df = df[(df["year"] >= START_YEAR) & (df["year"] <= END_YEAR)].copy()
+    df["usgs_km3"] = df["usgs_km3"] * usgs_scale
 
-    annual = (
-        df.groupby(["huc", "year"], as_index=False)
-        .agg(usgs_km3=("usgs_km3", "sum"), tethys_km3=("tethys_km3", "sum"))
+    annual = df.groupby(["huc", "year"], as_index=False).agg(
+        usgs_km3=("usgs_km3", "sum"),
+        tethys_km3=("tethys_km3", "sum"),
     )
-
-    # restrict to USGS reference years (5-year cadence; data covers 2000-2020)
-    usgs_years = sorted(annual.loc[annual["usgs_km3"] > 0, "year"].unique())
-    sub = annual[annual["year"].isin(usgs_years)].copy()
-    sub = sub[(sub["usgs_km3"].notna()) & (sub["tethys_km3"].notna())]
+    huc_mean = annual.groupby("huc", as_index=False).agg(
+        usgs_km3=("usgs_km3", "mean"),
+        tethys_km3=("tethys_km3", "mean"),
+    )
+    sub = huc_mean[
+        (huc_mean["usgs_km3"].notna())
+        & (huc_mean["tethys_km3"].notna())
+        & (huc_mean["usgs_km3"] > 0)
+    ].copy()
 
     obs = sub["usgs_km3"].to_numpy()
     sim = sub["tethys_km3"].to_numpy()
@@ -100,25 +138,27 @@ for sector in SECTORS:
     nse_val = nse(obs, sim)
     kge_val, kge_alpha, kge_beta, kge_r = kge(obs, sim)
     mbe = mbe_pct(obs, sim)
+    mae = mae_val(obs, sim)
+    rmse = rmse_val(obs, sim)
     nrmse = nrmse_pct(obs, sim)
-    medape = medape_pct(obs, sim)
-    n_huc = sub["huc"].nunique()
-    n_obs = len(sub)
+    mdape = mdape_pct(obs, sim)
+    mdapd = mdapd_sym_pct(obs, sim)
+    n_huc = len(sub)
 
     print(
-        f"{sector:11s}  n_huc={n_huc}  n_obs={n_obs}  "
-        f"r={pearson_r:.3f}  spearman={spearman_r:.3f}  "
-        f"NSE={nse_val:.3f}  KGE={kge_val:.3f} "
-        f"(alpha={kge_alpha:.3f} beta={kge_beta:.3f} r={kge_r:.3f})  "
-        f"MBE={mbe:+.1f}%  NRMSE={nrmse:.1f}%  MedAPE={medape:.1f}%"
+        f"{label:38s}  n_huc={n_huc:3d}  "
+        f"r={pearson_r:.3f}  MBE={mbe:+5.1f}%  "
+        f"MAE={mae:.3f}  RMSE={rmse:.3f}  NRMSE={nrmse:5.1f}%  "
+        f"MdAPE={mdape:5.1f}%  MdAPD_sym={mdapd:5.1f}%"
     )
 
     rows.append(
         {
-            "sector": sector,
+            "sector": label,
             "demand_type": DEMAND_TYPE,
+            "years": f"{START_YEAR}-{END_YEAR}",
+            "usgs_scale": usgs_scale,
             "n_huc6": n_huc,
-            "n_obs": n_obs,
             "pearson_r": round(pearson_r, 2),
             "spearman_rho": round(spearman_r, 2),
             "nse": round(nse_val, 2),
@@ -126,15 +166,21 @@ for sector in SECTORS:
             "kge_alpha": round(kge_alpha, 2),
             "kge_beta": round(kge_beta, 2),
             "kge_r": round(kge_r, 2),
-            "mbe_pct": round(mbe, 0),
-            "nrmse_pct": round(nrmse, 0),
-            "medape_pct": round(medape, 0),
+            "mbe_pct": int(round(mbe, 0)),
+            "mae_km3_yr": round(mae, 2),
+            "rmse_km3_yr": round(rmse, 2),
+            "nrmse_pct": int(round(nrmse, 0)),
+            "mdape_pct": int(round(mdape, 0)),
+            "mdapd_sym_pct": int(round(mdapd, 0)),
         }
     )
 
-# %% write csv
+# %% write csvs
 out_df = pd.DataFrame(rows)
-out_csv = OUT / "validation-metrics.csv"
-out_df.to_csv(out_csv, index=False)
-print(f"\nWrote {out_csv}")
+for out_dir in (OUT_LOCAL, OUT_PAPER):
+    out_csv = out_dir / "validation-metrics.csv"
+    out_df.to_csv(out_csv, index=False)
+    print(f"Wrote {out_csv}")
+
+print("\nSummary table:")
 print(out_df.to_string(index=False))

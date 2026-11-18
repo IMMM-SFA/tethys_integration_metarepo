@@ -1,21 +1,19 @@
 """
 Eq. 5 (electricity temporal-downscaling) HDD/CDD threshold sensitivity test.
 
-Background. The piecewise definition in Eq. 5 of the manuscript classifies each
+Background: The piecewise definition in Eq. 5 of the manuscript classifies each
 1/8 deg cell each year into one of four cases based on whether the annual
 heating-degree-day total H_y exceeds a heating threshold (default 650) and
 whether the annual cooling-degree-day total C_y exceeds a cooling threshold
-(default 450). The threshold convention is from Huang et al. (2018), but no
-sensitivity has been reported. This script perturbs the thresholds by +/- 50%
-and reports:
+(default 450). The threshold convention follows Huang et al. (2018). This
+script perturbs the thresholds by +/- 50% and reports:
 
   1. Partition fractions over CONUS for each threshold pair (case 1 = both
      seasons present, case 2 = heating only, case 3 = cooling only, case 4 =
      neither).
   2. CONUS-aggregated monthly Electricity weight profile under each threshold
      pair, holding GCAM-USA shares (p_heat, p_cool, p_other) at illustrative
-     values (0.20, 0.40, 0.40) so the sensitivity is to the case partition
-     only, not the GCAM share.
+     values (0.20, 0.40, 0.40) so the sensitivity isolates the case partition.
 
 Paths resolve through paths.yml; retarget them there, not here.
 
@@ -32,22 +30,22 @@ Outputs:
 # %% setup
 from pathlib import Path
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import xarray as xr
-import matplotlib.pyplot as plt
-
 import yaml
 
-P = yaml.safe_load(open("paths.yml"))
-
 HERE = Path(__file__).resolve().parent
-HDDCDD_DIR = Path(P["main_data_dir"]) / "historical"
+with open(HERE / "paths.yml", encoding="utf-8") as fh:
+    P = yaml.safe_load(fh)
 
-OUT_PAPER = Path(P["paper_figures_dir"])
+HDDCDD_DIR = (HERE / P["main_data_dir"] / "historical").resolve()
+
+OUT_PAPER = (HERE / P["paper_figures_dir"]).resolve()
 OUT_PAPER.mkdir(exist_ok=True, parents=True)
 
-OUT_LOCAL = Path(P["figures_dir"])
+OUT_LOCAL = (HERE / P["figures_dir"]).resolve()
 OUT_LOCAL.mkdir(exist_ok=True, parents=True)
 
 # Threshold scenarios: default plus +/- 50%
@@ -59,7 +57,7 @@ SCENARIOS = {
     "high": (DEFAULT_HDD * 1.5, DEFAULT_CDD * 1.5),  # (975, 675)
 }
 
-# illustrative GCAM-USA shares (heating, cooling, other)
+# Illustrative GCAM-USA shares (heating, cooling, other)
 P_HEAT, P_COOL, P_OTHER = 0.20, 0.40, 0.40
 
 
@@ -69,8 +67,7 @@ nc_files = [f for f in nc_files if "2010_2019" in f.name]
 assert nc_files, "No HDD/CDD files found"
 ds = xr.open_mfdataset(nc_files, combine="by_coords")
 
-# annual sums
-hdd_annual = ds["HDD"].sum(dim="month")  # (year, lat, lon)
+hdd_annual = ds["HDD"].sum(dim="month")
 cdd_annual = ds["CDD"].sum(dim="month")
 
 
@@ -90,16 +87,10 @@ def assign_case(h_annual, c_annual, hdd_thr, cdd_thr):
 partition_rows = []
 for name, (hdd_thr, cdd_thr) in SCENARIOS.items():
     case = assign_case(hdd_annual, cdd_annual, hdd_thr, cdd_thr)
-    # average over years -> (lat, lon) of dominant case fractions
-    # but since case is an integer, compute per-cell fraction across years for each case
-    n_years = case.sizes["year"]
-    n_cells = case.sizes["lat"] * case.sizes["lon"]
-    # CONUS-wide partition fractions averaged across all (year, cell) pairs
     total = case.size
     frac_by_case = {}
     for c in (1, 2, 3, 4):
-        f = float((case == c).sum().values) / total
-        frac_by_case[c] = f
+        frac_by_case[c] = float((case == c).sum().values) / total
     partition_rows.append(
         {
             "scenario": name,
@@ -113,16 +104,12 @@ for name, (hdd_thr, cdd_thr) in SCENARIOS.items():
     )
 
 # %% per-scenario CONUS-aggregate monthly Electricity weight profile
-# weight_m = p_heat * h_hat_m + p_cool * c_hat_m + p_other * (1/12)
-# h_hat, c_hat depend on case: case 1 (HDD/H, CDD/C); case 2 (HDD/H, HDD/H);
-# case 3 (CDD/C, CDD/C); case 4 (1/12, 1/12).
-
-H_y = ds["HDD"].sum(dim="month")  # (year, lat, lon)
+H_y = ds["HDD"].sum(dim="month")
 C_y = ds["CDD"].sum(dim="month")
-HDD_m = ds["HDD"]  # (year, month, lat, lon)
+HDD_m = ds["HDD"]
 CDD_m = ds["CDD"]
 EPS = 1e-9
-hdd_share = HDD_m / (H_y + EPS)  # (year, month, lat, lon)
+hdd_share = HDD_m / (H_y + EPS)
 cdd_share = CDD_m / (C_y + EPS)
 uniform = xr.full_like(hdd_share, 1 / 12)
 
@@ -142,21 +129,18 @@ for name, (hdd_thr, cdd_thr) in SCENARIOS.items():
     )
     o_hat = xr.full_like(hdd_share, 1 / 12)
     weight = P_HEAT * h_hat + P_COOL * c_hat + P_OTHER * o_hat
-    # CONUS-aggregate monthly profile: cell-mean weight per month
     profile = weight.mean(dim=("year", "lat", "lon")).compute().values
-    # renormalize so sum to 1 (for visual comparison)
     profile = profile / profile.sum()
     monthly_profile_per_scenario[name] = profile
 
 
-# %% write summary CSV
+# %% write summary CSVs
 df = pd.DataFrame(partition_rows)
 csv_out = OUT_PAPER / "eq5-hdd-cdd-sensitivity-summary.csv"
 df.to_csv(csv_out, index=False)
 print(f"Wrote {csv_out}")
 print(df.to_string(index=False))
 
-# also write the monthly profiles
 prof_df = pd.DataFrame(
     {name: monthly_profile_per_scenario[name] for name in SCENARIOS},
     index=pd.Index(range(1, 13), name="month"),
@@ -166,9 +150,7 @@ prof_df.to_csv(prof_csv)
 print(f"Wrote {prof_csv}")
 print(prof_df.round(4).to_string())
 
-# CONUS-mean shift relative to default
-print()
-print("Max monthly weight difference vs default (percentage points):")
+print("\nMax monthly weight difference vs default (percentage points):")
 default = monthly_profile_per_scenario["default"]
 for name in SCENARIOS:
     diff = (monthly_profile_per_scenario[name] - default) * 100
@@ -178,66 +160,57 @@ for name in SCENARIOS:
     )
 
 
-# %% plot
-# fig, axes = plt.subplots(1, 1, figsize=(11, 4))
+# %% plot (consistent sans-serif styling, accessible markers/linestyles, no redundant title)
+plt.rcParams.update(
+    {
+        "font.family": "sans-serif",
+        "font.size": 11,
+        "axes.labelsize": 11.5,
+        "xtick.labelsize": 10.5,
+        "ytick.labelsize": 10.5,
+        "legend.fontsize": 10,
+    }
+)
 
-# (a) partition fractions stacked bar
-# ax = axes[0]
-# cases = [
-#     "case1_both_pct",
-#     "case2_heating_only_pct",
-#     "case3_cooling_only_pct",
-#     "case4_uniform_pct",
-# ]
-# labels = [
-#     "Case 1: both",
-#     "Case 2: heating only",
-#     "Case 3: cooling only",
-#     "Case 4: uniform",
-# ]
-# colors = ["#406084", "#a05a2c", "#5f8a3f", "#888888"]
-# bottom = np.zeros(len(SCENARIOS))
-# xs = list(SCENARIOS.keys())
-# for c, lbl, col in zip(cases, labels, colors):
-#     vals = df[c].to_numpy()
-#     ax.bar(xs, vals, bottom=bottom, color=col, label=lbl, edgecolor="white")
-#     bottom = bottom + vals
-# ax.set_ylabel("CONUS cell-year fraction (%)")
-# ax.set_xlabel("Threshold scenario")
-# xs_with_thr = [
-#     f"{name}\n(HDD={int(hdd)}, CDD={int(cdd)})"
-#     for name, (hdd, cdd) in SCENARIOS.items()
-# ]
-# ax.set_xticks(range(len(xs)))
-# ax.set_xticklabels(xs_with_thr)
-# ax.set_ylim(0, 100)
-# ax.legend(loc="lower right", fontsize=8)
-# ax.set_title("(a) Eq. 5 case partition")
+fig, ax = plt.subplots(figsize=(6.5, 4.5), facecolor="white")
+styles = {
+    "low": ("#a8501c", "o", "--", "Low (-50%: HDD = 325, CDD = 225)"),
+    "default": ("#222222", "s", "-", "Default (HDD = 650, CDD = 450)"),
+    "high": ("#3d6b7a", "^", "-.", "High (+50%: HDD = 975, CDD = 675)"),
+}
 
-# (b) monthly weight profile
-# ax = axes[0]
-for name, color in zip(SCENARIOS, ["#a05a2c", "#406084", "#5f8a3f"]):
-    plt.plot(
-        range(1, 13),
+months = np.arange(1, 13)
+for name in ("low", "default", "high"):
+    color, marker, ls, label = styles[name]
+    ax.plot(
+        months,
         monthly_profile_per_scenario[name],
-        "o-",
+        linestyle=ls,
+        marker=marker,
+        markersize=5.5,
+        linewidth=1.6,
         color=color,
-        label=f"{name} (HDD={int(SCENARIOS[name][0])}, CDD={int(SCENARIOS[name][1])})",
+        label=label,
     )
-plt.xlabel("Month")
-plt.ylabel("CONUS-mean Electricity monthly weight")
-plt.xticks(range(1, 13))
-plt.legend(fontsize=8)
-plt.title("Monthly electricity water demand weight profile")
 
-# plt.suptitle(
-#     "HDD/CDD threshold sensitivity",
-#     fontsize=11,
-# )
-plt.tight_layout()
-fig_out1 = OUT_PAPER / "eq5-hdd-cdd-sensitivity.png"
-fig_out2 = OUT_LOCAL / "eq5-hdd-cdd-sensitivity.png"
-plt.savefig(fig_out1, dpi=200, bbox_inches="tight")
-plt.savefig(fig_out2, dpi=200, bbox_inches="tight")
-print(f"Wrote {fig_out1}")
-print(f"Wrote {fig_out2}")
+ax.set_xlabel("Month")
+ax.set_ylabel("CONUS-mean monthly weight")
+ax.set_xticks(months)
+ax.grid(True, color="#e5e5e5", linewidth=0.7)
+for spine in ax.spines.values():
+    spine.set_edgecolor("#404040")
+    spine.set_linewidth(0.8)
+ax.legend(
+    frameon=True,
+    facecolor="white",
+    edgecolor="#cccccc",
+    loc="upper center",
+    bbox_to_anchor=(0.5, -0.15),
+    ncol=1,
+)
+
+for out_dir in (OUT_PAPER, OUT_LOCAL):
+    fig_out = out_dir / "eq5-hdd-cdd-sensitivity.png"
+    fig.savefig(fig_out, dpi=300, bbox_inches="tight", pad_inches=0.08, facecolor="white")
+    print(f"Wrote {fig_out}")
+plt.close(fig)
