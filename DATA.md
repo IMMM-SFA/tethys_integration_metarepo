@@ -115,7 +115,8 @@ The `usgs_*_huc12_monthly_*.csv` group is both written by stage 2a and read by s
 | `val6-scenarios-annual-conus-timeseries.png` | `old/5c-scenarios-timeseries.R` | `paper/` |
 | `usage1-dominant-sector-tethys-grid.png`, `dominant-sector-tethys-grid.csv` | 5d | `paper/`, `paper/figures/` |
 | `eq5-hdd-cdd-sensitivity.png` plus summary and monthly-profile CSVs | `validation/7-eq5-hdd-cdd-thresholds.py` | `paper/figures/` |
-| `validation-metrics.csv`, paper Table 2 | `6-compute-table2-metrics.py` | `paper/figures/` |
+| `val6-multisector-sensitivity.png` plus `sensitivity-{spatial-huc6,temporal-monthly}.csv` | `validation/8-multisector-sensitivity.py` | `validation/figures/`, `paper/figures/` |
+| `validation-metrics.csv`, paper Table 4 | `6-compute-table2-metrics.py` | `paper/figures/` |
 | `flow-chart.pdf`, Figure 2 | `paper/flow-chart.tex`, TikZ | `paper/` |
 
 Stage 5a writes to both `validation/figures/` and `../paper/figures/`; disable the second with `WRITE_PAPER=false`. Stage 5d writes into the paper submodule with no toggle.

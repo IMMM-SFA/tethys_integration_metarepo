@@ -40,3 +40,5 @@ data_dir: data
 figures_dir: figures
 paper_figures_dir: ../paper/figures
 main_data_dir: ../data
+reference_data_dir: ../scripts/3_config/reference_data
+raw_runoff_shares_hist: ../scripts/2_postprocess/adjust_runoff_shares/gridded_runoff_shares_hist.nc
