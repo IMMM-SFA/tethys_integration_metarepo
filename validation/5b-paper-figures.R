@@ -577,16 +577,16 @@ parse_scenario <- function(s) {
   if (s == "historical") {
     tibble(
       scenario = s,
-      rcp = "Historical",
-      climate = NA_character_,
+      forcing = "Historical",
+      gcm_sensitivity = NA_character_,
       ssp = NA_character_
     )
   } else {
     m <- str_match(s, "^rcp(45|85)(cooler|hotter)_ssp([35])$")
     tibble(
       scenario = s,
-      rcp = paste0("RCP", str_sub(m[, 2], 1, 1), ".", str_sub(m[, 2], 2, 2)),
-      climate = m[, 3],
+      forcing = paste0(str_sub(m[, 2], 1, 1), ".", str_sub(m[, 2], 2, 2)),
+      gcm_sensitivity = str_to_title(m[, 3]),
       ssp = paste0("SSP", m[, 4])
     )
   }
@@ -627,13 +627,13 @@ historical_anchor <- demand_all |>
 
 future_starts <- demand_all |>
   filter(scenario != "historical") |>
-  distinct(scenario, sector, rcp, climate, ssp) |>
+  distinct(scenario, sector, forcing, gcm_sensitivity, ssp) |>
   left_join(historical_anchor, by = "sector") |>
   transmute(
     scenario,
     sector,
-    rcp,
-    climate,
+    forcing,
+    gcm_sensitivity,
     ssp,
     year = historical_cutoff,
     demand_km3 = demand_km3_hist
@@ -644,12 +644,23 @@ demand_all <- bind_rows(future_starts, demand_all) |>
 
 scenario_colors <- c(
   "Historical" = "#222222",
-  "RCP4.5" = "#3d6b7a",
-  "RCP8.5" = "#a8501c"
+  "4.5" = "#3d6b7a",
+  "8.5" = "#a8501c"
+)
+
+forcing_labels <- c(
+  "Historical" = "Historical",
+  "4.5" = expression("Moderately hotter & drier (4.5 W/m"^2 * ")"),
+  "8.5" = expression("Severely hotter & drier (8.5 W/m"^2 * ")")
 )
 
 ssp_linetypes <- c("SSP3" = "solid", "SSP5" = "22")
-climate_widths <- c("cooler" = 0.45, "hotter" = 0.95)
+ssp_labels <- c(
+  "SSP3" = "SSP3 (Low growth)",
+  "SSP5" = "SSP5 (High growth)"
+)
+
+gcm_widths <- c("Cooler" = 0.45, "Hotter" = 0.95)
 
 p_projections <- ggplot() +
   geom_line(
@@ -658,24 +669,32 @@ p_projections <- ggplot() +
       x = year,
       y = demand_km3,
       group = scenario,
-      color = rcp,
+      color = forcing,
       linetype = ssp,
-      linewidth = climate
+      linewidth = gcm_sensitivity
     )
   ) +
   geom_line(
     data = demand_all |> filter(scenario == "historical"),
-    aes(x = year, y = demand_km3, group = scenario, color = rcp),
+    aes(x = year, y = demand_km3, group = scenario, color = forcing),
     linewidth = 0.95
   ) +
   facet_wrap(~sector, scales = "free_y", ncol = 2) +
   scale_color_manual(
     values = scenario_colors,
-    breaks = c("Historical", "RCP4.5", "RCP8.5"),
-    name = "Pathway"
+    breaks = c("Historical", "4.5", "8.5"),
+    labels = forcing_labels,
+    name = "Forcing & weather"
   ) +
-  scale_linetype_manual(values = ssp_linetypes, name = "SSP") +
-  scale_linewidth_manual(values = climate_widths, name = "GCM") +
+  scale_linetype_manual(
+    values = ssp_linetypes,
+    labels = ssp_labels,
+    name = "Socioeconomics"
+  ) +
+  scale_linewidth_manual(
+    values = gcm_widths,
+    name = "GCM sensitivity"
+  ) +
   scale_x_continuous(breaks = seq(1980, 2100, 20)) +
   labs(
     x = NULL,
@@ -684,24 +703,32 @@ p_projections <- ggplot() +
   theme_tethys(base_size = 12) +
   theme(
     legend.box = "horizontal",
+    legend.box.just = "top",
     legend.title = element_text(face = "bold", size = 10.5),
     legend.text = element_text(size = 10),
-    legend.spacing.x = unit(0.2, "cm")
+    legend.spacing.x = unit(0.85, "cm"),
+    legend.key.height = unit(0.45, "cm")
   ) +
   guides(
     color = guide_legend(
       order = 1,
-      keywidth = unit(0.95, "cm"),
+      ncol = 1,
+      title.position = "top",
+      keywidth = unit(1.0, "cm"),
       override.aes = list(linewidth = 0.95)
     ),
     linetype = guide_legend(
       order = 2,
+      ncol = 1,
+      title.position = "top",
       keywidth = unit(1.5, "cm"),
       override.aes = list(linewidth = 0.95, colour = "grey15")
     ),
     linewidth = guide_legend(
       order = 3,
-      keywidth = unit(0.95, "cm")
+      ncol = 1,
+      title.position = "top",
+      keywidth = unit(1.0, "cm")
     )
   )
 
@@ -712,7 +739,7 @@ save_plot(
   "usage2-projections-annual-conus-timeseries.png",
   p_projections,
   width = 10.0,
-  height = 6.0
+  height = 6.4
 )
 
 message("Done.")
